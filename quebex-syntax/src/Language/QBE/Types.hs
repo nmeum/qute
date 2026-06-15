@@ -2,7 +2,70 @@
 --
 -- SPDX-License-Identifier: GPL-3.0-only
 
-module Language.QBE.Types where
+module Language.QBE.Types
+  ( -- * Identifiers
+    UserIdent (..),
+    LocalIdent (..),
+    BlockIdent (..),
+    GlobalIdent (..),
+
+    -- * Types
+    BaseType (..),
+    baseTypeByteSize,
+    baseTypeBitSize,
+    ExtType (..),
+    extTypeBitSize,
+    extTypeByteSize,
+    SubWordType (..),
+    SubType (..),
+    LoadType (..),
+    loadByteSize,
+
+    -- * Values
+    Const (..),
+    DynConst (..),
+    Value (..),
+
+    -- * Definitions
+    TypeDef (..),
+    DataDef (..),
+    Linkage (..),
+    Field,
+    AggType (..),
+    dataSize,
+    DataObj (..),
+    objAlign,
+    objSize,
+    DataItem (..),
+    JumpInstr (..),
+
+    -- * Functions
+    FuncDef (..),
+    FuncParam (..),
+    FuncArg (..),
+    Abity (..),
+    abityToBase,
+    Block' (..),
+    Block (..),
+    insertJumps,
+
+    -- * Instructions
+    Statement (..),
+    Instr (..),
+    VolatileInstr (..),
+    ExtArg (..),
+    toExtType,
+    FloatArg (..),
+    f2BaseType,
+    IntArg (..),
+    i2BaseType,
+    IntCmpOp (..),
+    FloatCmpOp (..),
+    Phi (..),
+    AllocSize (..),
+    getSize,
+  )
+where
 
 import Control.Monad (foldM)
 import Data.Map (Map)
