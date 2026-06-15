@@ -33,7 +33,14 @@
 
 \ignore{
 \begin{code}
-module Language.QBE.Parser where
+module Language.QBE.Parser
+  ( skipInitComments,
+    dataDef,
+    typeDef,
+    funcDef,
+    fileDef
+  )
+where
 
 import Control.Monad (foldM)
 import Data.Char (chr)
