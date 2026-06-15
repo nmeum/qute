@@ -35,6 +35,7 @@
 \begin{code}
 module Language.QBE.Parser where
 
+import Control.Monad (foldM)
 import Data.Char (chr)
 import Data.Word (Word64)
 import Data.Functor ((<&>))
@@ -655,7 +656,7 @@ funcDef = do
   args <- wsNL params
   body <- between (wsNL1 $ char '{') (wsNL $ char '}') $ many1 block
 
-  case (Q.insertJumps body) of
+  case (insertJumps body) of
     Nothing -> fail $ "invalid fallthrough in " ++ show name
     Just bl -> return $ Q.FuncDef link name retTy args bl
 \end{code}
@@ -776,13 +777,46 @@ straight-line code which are connected using jump instructions.
 \subsection{Blocks}
 \label{sec:blocks}
 
+\ignore{
 \begin{code}
-block :: Parser Q.Block'
+-- Basic block abstraction with optional exit points. The 'insertJumps'
+-- function takes care of inserting fallthrough for omitted jumps.
+data Block'
+  = Block'
+  { label' :: Q.BlockIdent,
+    phi' :: [Q.Phi],
+    stmt' :: [Q.Statement],
+    term' :: Maybe Q.JumpInstr
+  }
+  deriving (Show, Eq)
+
+insertJumps :: [Block'] -> Maybe [Q.Block]
+insertJumps xs = foldM go [] $ zipWithNext xs
+  where
+    zipWithNext :: [a] -> [(a, Maybe a)]
+    zipWithNext [] = []
+    zipWithNext lst@(_ : t) = zip lst $ map Just t ++ [Nothing]
+
+    fromBlock' :: Block' -> Q.JumpInstr -> Q.Block
+    fromBlock' (Block' l p s _) = Q.Block l p s
+
+    go :: [Q.Block] -> (Block', Maybe Block') -> Maybe [Q.Block]
+    go acc (x@Block' {term' = Just ji}, _) =
+      Just (acc ++ [fromBlock' x ji])
+    go acc (x@Block' {term' = Nothing}, Just nxt) =
+      Just (acc ++ [fromBlock' x (Q.Jump $ label' nxt)])
+    go _ (Block' {term' = Nothing}, Nothing) =
+      Nothing
+\end{code}
+}
+
+\begin{code}
+block :: Parser Block'
 block = do
   l <- wsNL1 label
   p <- many (wsNL1 $ try phiInstr)
   s <- many (wsNL1 statement)
-  Q.Block' l p s <$> (optionMaybe $ wsNL1 jumpInstr)
+  Block' l p s <$> (optionMaybe $ wsNL1 jumpInstr)
 \end{code}
 
 All blocks have a name that is specified by a label at their beginning.
