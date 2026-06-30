@@ -4,14 +4,19 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
 module Language.QBE.Analysis.CFG
-  ( CFG (cfgFunction, cfgLabelMap, cfgBlockMap, cfgSuccessors),
+  ( -- * Control Flow Graph
     Label,
-    cfgEdges,
+    CFG (cfgFunction, cfgLabelMap, cfgBlockMap, cfgSuccessors),
+    build,
     basicBlockToLabel,
     labelToBasicBlock,
     lookupSuccessors,
-    build,
+
+    -- * Graph Representation
+    cfgEdges,
     cfgGraph,
+
+    -- * Dominator Analysis
     cfgDomGraph,
     cfgStartRoot,
     cfgReturnRoot,
