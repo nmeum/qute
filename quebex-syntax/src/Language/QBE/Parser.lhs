@@ -47,6 +47,7 @@ import Data.Char (chr)
 import Data.Word (Word64)
 import Data.Functor ((<&>))
 import Data.List (singleton)
+import Data.Map (Map)
 import Data.Map qualified as Map
 import qualified Language.QBE.Types as Q
 import Language.QBE.Util (bind, decNumber, octNumber, float)
@@ -665,7 +666,17 @@ funcDef = do
 
   case (insertJumps body) of
     Nothing -> fail $ "invalid fallthrough in " ++ show name
-    Just bl -> return $ Q.FuncDef link name retTy args bl
+    Just [] -> error "unreachable" -- TODO: Use NonEmpty
+    Just blocks@(startBlk:_) ->
+      return $
+        Q.FuncDef {
+          Q.fLinkage = link,
+          Q.fName = name,
+          Q.fStart = Q.label startBlk,
+          Q.fAbity = retTy,
+          Q.fParams = args,
+          Q.fBlock = blkMap blocks
+        }
 \end{code}
 
 Function definitions contain the actual code to emit in the compiled
@@ -796,6 +807,9 @@ data Block'
     term' :: Maybe Q.JumpInstr
   }
   deriving (Show, Eq)
+
+blkMap :: [Q.Block] -> Map Q.BlockIdent Q.Block
+blkMap = Map.fromList . map (\b -> (Q.label b, b))
 
 insertJumps :: [Block'] -> Maybe [Q.Block]
 insertJumps xs = foldM go [] $ zipWithNext xs

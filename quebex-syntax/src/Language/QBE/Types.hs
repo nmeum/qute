@@ -46,6 +46,7 @@ module Language.QBE.Types
     Abity (..),
     abityToBase,
     Block (..),
+    fEntry,
 
     -- * Instructions
     Statement (..),
@@ -66,6 +67,8 @@ module Language.QBE.Types
 where
 
 import Data.Map (Map)
+import Data.Map qualified as Map
+import Data.Maybe (fromJust)
 import Data.Word (Word64)
 
 -- TODO: Prefix all constructors
@@ -248,11 +251,15 @@ data FuncDef
   = FuncDef
   { fLinkage :: [Linkage],
     fName :: GlobalIdent,
+    fStart :: BlockIdent,
     fAbity :: Maybe Abity,
     fParams :: [FuncParam],
-    fBlock :: [Block] -- TODO: Use a Map here
+    fBlock :: Map BlockIdent Block
   }
   deriving (Show, Eq)
+
+fEntry :: FuncDef -> Block
+fEntry func = fromJust $ Map.lookup (fStart func) (fBlock func)
 
 data FuncParam
   = Regular Abity LocalIdent
@@ -395,7 +402,7 @@ data Phi
 
 data Block
   = Block
-  { label :: BlockIdent,
+  { label :: BlockIdent, -- TODO: Consider removing this (part of the Map)
     phi :: [Phi],
     stmt :: [Statement],
     term :: JumpInstr
