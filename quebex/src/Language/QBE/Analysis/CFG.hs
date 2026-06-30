@@ -20,9 +20,12 @@ module Language.QBE.Analysis.CFG
 where
 
 import Data.Graph (Graph, buildG)
+import Data.IntMap (IntMap)
 import Data.IntMap qualified as IntMap
+import Data.IntSet (IntSet)
 import Data.IntSet qualified as IntSet
 import Data.List (singleton)
+import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
 import Data.Tuple (swap)
@@ -37,9 +40,9 @@ data CFG
   = CFG
   { cfgMaxBound :: Int,
     cfgFunction :: QBE.FuncDef,
-    cfgLabelMap :: Map.Map QBE.BlockIdent Label,
-    cfgBlockMap :: IntMap.IntMap QBE.BlockIdent,
-    cfgSuccessors :: IntMap.IntMap Successors -- TODO: Use a Set or List here?
+    cfgLabelMap :: Map QBE.BlockIdent Label,
+    cfgBlockMap :: IntMap QBE.BlockIdent,
+    cfgSuccessors :: IntMap Successors -- TODO: Use a Set or List here?
   }
   deriving (Show)
 
@@ -81,7 +84,7 @@ successorsToBlockList cfg succs = map getBlock (successorsToBlockList' succs)
     getBlock :: Label -> QBE.BlockIdent
     getBlock label = fromJust $ IntMap.lookup label (cfgBlockMap cfg)
 
-successorsToIntSet :: Successors -> IntSet.IntSet
+successorsToIntSet :: Successors -> IntSet
 successorsToIntSet = IntSet.fromList . successorsToBlockList'
 
 ------------------------------------------------------------------------
@@ -96,7 +99,7 @@ returnIdent = (QBE.BlockIdent "=return", 1)
 identStart :: Label
 identStart = 2
 
-build' :: Map.Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, Successors)]
+build' :: Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, Successors)]
 build' labelMap = foldl go [(snd haltIdent, SuccNone), (snd returnIdent, SuccNone)]
   where
     getId :: QBE.BlockIdent -> Label
@@ -120,7 +123,7 @@ build func =
       cfgSuccessors = IntMap.fromList $ build' labelMap blocks
     }
   where
-    labelMap :: Map.Map QBE.BlockIdent Label
+    labelMap :: Map QBE.BlockIdent Label
     labelMap = Map.fromList blkIdLabels
 
     blocks :: [QBE.Block]
@@ -138,7 +141,7 @@ cfgDomGraph :: CFG -> DG.Graph
 cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
   IntMap.fromList $ map (\l -> (l, succSet l)) (Map.elems labelMap)
   where
-    succSet :: Label -> IntSet.IntSet
+    succSet :: Label -> IntSet
     succSet l =
       successorsToIntSet
         (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
