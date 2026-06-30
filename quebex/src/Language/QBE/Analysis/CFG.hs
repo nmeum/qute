@@ -44,7 +44,10 @@ data CFG
   deriving (Show)
 
 cfgEdges :: CFG -> [DG.Edge]
-cfgEdges = DG.toEdges . cfgDomGraph
+cfgEdges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
+  where
+    go :: [DG.Edge] -> (Label, Successors) -> [DG.Edge]
+    go acc (p, c) = acc ++ map (p,) (successorsToBlockList' c)
 
 basicBlockToLabel :: CFG -> QBE.BlockIdent -> Maybe Label
 basicBlockToLabel CFG {cfgLabelMap = m} blkId = Map.lookup blkId m
