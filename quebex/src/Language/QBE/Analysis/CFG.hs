@@ -4,13 +4,14 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
 module Language.QBE.Analysis.CFG
-  ( CFG,
+  ( CFG (cfgFunction, cfgLabelMap, cfgBlockMap, cfgSuccessors),
     Label,
     cfgEdges,
     basicBlockToLabel,
     labelToBasicBlock,
     lookupSuccessors,
     build,
+    cfgGraph,
     cfgDomGraph,
     cfgStartRoot,
     cfgReturnRoot,
@@ -18,13 +19,14 @@ module Language.QBE.Analysis.CFG
   )
 where
 
+import Data.Graph (Graph, buildG)
 import Data.IntMap qualified as IntMap
 import Data.IntSet qualified as IntSet
 import Data.List (singleton)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
 import Data.Tuple (swap)
-import Language.QBE.Analysis.Graph qualified as G
+import Language.QBE.Analysis.Graph qualified as DG
 import Language.QBE.Types qualified as QBE
 
 type Label = IntMap.Key
@@ -33,15 +35,16 @@ type Label = IntMap.Key
 -- or a BlockIdent or a custom Block data structure which includes both? Hmhm…
 data CFG
   = CFG
-  { cfgFunction :: QBE.FuncDef,
+  { cfgMaxBound :: Int,
+    cfgFunction :: QBE.FuncDef,
     cfgLabelMap :: Map.Map QBE.BlockIdent Label,
     cfgBlockMap :: IntMap.IntMap QBE.BlockIdent,
     cfgSuccessors :: IntMap.IntMap Successors -- TODO: Use a Set or List here?
   }
   deriving (Show)
 
-cfgEdges :: CFG -> [G.Edge]
-cfgEdges = G.toEdges . cfgDomGraph
+cfgEdges :: CFG -> [DG.Edge]
+cfgEdges = DG.toEdges . cfgDomGraph
 
 basicBlockToLabel :: CFG -> QBE.BlockIdent -> Maybe Label
 basicBlockToLabel CFG {cfgLabelMap = m} blkId = Map.lookup blkId m
@@ -107,7 +110,8 @@ build' labelMap = foldl go [(snd haltIdent, SuccNone), (snd returnIdent, SuccNon
 build :: QBE.FuncDef -> CFG
 build func =
   CFG
-    { cfgFunction = func,
+    { cfgMaxBound = snd $ last blkIdLabels,
+      cfgFunction = func,
       cfgLabelMap = labelMap,
       cfgBlockMap = IntMap.fromList $ map swap blkIdLabels,
       cfgSuccessors = IntMap.fromList $ build' labelMap blocks
@@ -122,9 +126,12 @@ build func =
     blkIdLabels :: [(QBE.BlockIdent, Label)]
     blkIdLabels = [haltIdent, returnIdent] ++ zip (map QBE.label blocks) [identStart ..]
 
+cfgGraph :: CFG -> Graph
+cfgGraph cfg = buildG (snd haltIdent, cfgMaxBound cfg) $ cfgEdges cfg
+
 ------------------------------------------------------------------------
 
-cfgDomGraph :: CFG -> G.Graph
+cfgDomGraph :: CFG -> DG.Graph
 cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
   IntMap.fromList $ map (\l -> (l, succSet l)) (Map.elems labelMap)
   where
@@ -133,11 +140,11 @@ cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
       successorsToIntSet
         (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
 
-cfgStartRoot :: CFG -> G.Rooted
+cfgStartRoot :: CFG -> DG.Rooted
 cfgStartRoot cfg = (identStart, cfgDomGraph cfg)
 
-cfgReturnRoot :: CFG -> G.Rooted
+cfgReturnRoot :: CFG -> DG.Rooted
 cfgReturnRoot cfg = (snd returnIdent, cfgDomGraph cfg)
 
-cfgHaltRoot :: CFG -> G.Rooted
+cfgHaltRoot :: CFG -> DG.Rooted
 cfgHaltRoot cfg = (snd returnIdent, cfgDomGraph cfg)
