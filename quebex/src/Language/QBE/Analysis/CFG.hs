@@ -11,7 +11,7 @@ module Language.QBE.Analysis.CFG
     labelToBasicBlock,
     lookupSuccessors,
     build,
-    cfgToGraph,
+    cfgDomGraph,
     cfgStartRoot,
     cfgReturnRoot,
     cfgHaltRoot,
@@ -41,7 +41,7 @@ data CFG
   deriving (Show)
 
 cfgEdges :: CFG -> [G.Edge]
-cfgEdges = G.toEdges . cfgToGraph
+cfgEdges = G.toEdges . cfgDomGraph
 
 basicBlockToLabel :: CFG -> QBE.BlockIdent -> Maybe Label
 basicBlockToLabel CFG {cfgLabelMap = m} blkId = Map.lookup blkId m
@@ -124,8 +124,8 @@ build func =
 
 ------------------------------------------------------------------------
 
-cfgToGraph :: CFG -> G.Graph
-cfgToGraph cfg@(CFG {cfgLabelMap = labelMap}) =
+cfgDomGraph :: CFG -> G.Graph
+cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
   IntMap.fromList $ map (\l -> (l, succSet l)) (Map.elems labelMap)
   where
     succSet :: Label -> IntSet.IntSet
@@ -134,10 +134,10 @@ cfgToGraph cfg@(CFG {cfgLabelMap = labelMap}) =
         (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
 
 cfgStartRoot :: CFG -> G.Rooted
-cfgStartRoot cfg = (identStart, cfgToGraph cfg)
+cfgStartRoot cfg = (identStart, cfgDomGraph cfg)
 
 cfgReturnRoot :: CFG -> G.Rooted
-cfgReturnRoot cfg = (snd returnIdent, cfgToGraph cfg)
+cfgReturnRoot cfg = (snd returnIdent, cfgDomGraph cfg)
 
 cfgHaltRoot :: CFG -> G.Rooted
-cfgHaltRoot cfg = (snd returnIdent, cfgToGraph cfg)
+cfgHaltRoot cfg = (snd returnIdent, cfgDomGraph cfg)
