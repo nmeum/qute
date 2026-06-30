@@ -22,7 +22,7 @@ where
 import Control.Monad (unless, void, when)
 import Control.Monad.Error.Class (throwError)
 import Data.Functor ((<&>))
-import Data.List (elemIndex, find, uncons)
+import Data.List (elemIndex, uncons)
 import Data.Map qualified as Map
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Word (Word8)
@@ -260,7 +260,7 @@ execJump :: (Simulator m v) => QBE.JumpInstr -> m (BlockResult v)
 execJump QBE.Halt = throwError EncounteredHalt
 execJump (QBE.Jump ident) = do
   blocks <- QBE.fBlock <$> (activeFrame <&> stkFunc)
-  case find (\x -> QBE.label x == ident) blocks of
+  case Map.lookup ident blocks of
     Just bl -> pure $ Right bl
     Nothing -> throwError (UnknownBlock ident)
 execJump (QBE.Jnz cond ifT ifF) = do
@@ -318,8 +318,7 @@ execTilRet prevIdent block = go prevIdent (Right block)
 -- value of 'execFunc' is the return value of the executed 'QBE.FuncDef'. If the function
 -- has no return value, 'Nothing' is returned here.
 execFunc :: (Simulator m v) => QBE.FuncDef -> [v] -> m (Maybe v)
-execFunc (QBE.FuncDef {QBE.fBlock = []}) _ = pure Nothing
-execFunc func@(QBE.FuncDef {QBE.fBlock = block : _, QBE.fParams = params}) args = do
+execFunc func@(QBE.FuncDef {QBE.fParams = params}) args = do
   -- Assumption: Variadic argument has been filtered from args (see lookupArgs).
   let varIdxMay = elemIndex QBE.Variadic params
       numNamed = fromMaybe (length args) varIdxMay
@@ -337,7 +336,7 @@ execFunc func@(QBE.FuncDef {QBE.fBlock = block : _, QBE.fParams = params}) args 
           zip (map paramName $ take numNamed params) args
   void $ newStackFrame func vars (drop numNamed args)
 
-  blockResult <- execTilRet Nothing block <* returnFromFunc
+  blockResult <- execTilRet Nothing (QBE.fEntry func) <* returnFromFunc
   case blockResult of
     Right _block -> throwError MissingFunctionReturn
     Left maybeValue -> pure maybeValue

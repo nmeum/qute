@@ -51,6 +51,7 @@ data CFG
   }
   deriving (Show)
 
+-- | Returns a list of graph edges in an unspecified order.
 cfgEdges :: CFG -> [DG.Edge]
 cfgEdges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
   where
@@ -132,7 +133,7 @@ build func =
     labelMap = Map.fromList blkIdLabels
 
     blocks :: [QBE.Block]
-    blocks = QBE.fBlock func
+    blocks = Map.elems $ QBE.fBlock func
 
     blkIdLabels :: [(QBE.BlockIdent, Label)]
     blkIdLabels = [haltIdent, returnIdent] ++ zip (map QBE.label blocks) [identStart ..]
