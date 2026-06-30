@@ -4,27 +4,37 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
 module Language.QBE.Analysis.CFG
-  ( CFG,
+  ( -- * Control Flow Graph
     Label,
-    cfgEdges,
+    CFG (cfgFunction, cfgLabelMap, cfgBlockMap, cfgSuccessors),
+    build,
     basicBlockToLabel,
     labelToBasicBlock,
     lookupSuccessors,
-    build,
-    cfgToGraph,
+
+    -- * Graph Representation
+    cfgEdges,
+    cfgGraph,
+
+    -- * Dominator Analysis
+    cfgDomGraph,
     cfgStartRoot,
     cfgReturnRoot,
     cfgHaltRoot,
   )
 where
 
+import Data.Graph (Graph, buildG)
+import Data.IntMap (IntMap)
 import Data.IntMap qualified as IntMap
+import Data.IntSet (IntSet)
 import Data.IntSet qualified as IntSet
 import Data.List (singleton)
+import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
 import Data.Tuple (swap)
-import Language.QBE.Analysis.Graph qualified as G
+import Language.QBE.Analysis.Graph qualified as DG
 import Language.QBE.Types qualified as QBE
 
 type Label = IntMap.Key
@@ -33,15 +43,20 @@ type Label = IntMap.Key
 -- or a BlockIdent or a custom Block data structure which includes both? Hmhm…
 data CFG
   = CFG
-  { cfgFunction :: QBE.FuncDef,
-    cfgLabelMap :: Map.Map QBE.BlockIdent Label,
-    cfgBlockMap :: IntMap.IntMap QBE.BlockIdent,
-    cfgSuccessors :: IntMap.IntMap Successors -- TODO: Use a Set or List here?
+  { cfgMaxBound :: Int,
+    cfgFunction :: QBE.FuncDef,
+    cfgLabelMap :: Map QBE.BlockIdent Label,
+    cfgBlockMap :: IntMap QBE.BlockIdent,
+    cfgSuccessors :: IntMap Successors -- TODO: Use a Set or List here?
   }
   deriving (Show)
 
-cfgEdges :: CFG -> [G.Edge]
-cfgEdges = G.toEdges . cfgToGraph
+-- | Returns a list of graph edges in an unspecified order.
+cfgEdges :: CFG -> [DG.Edge]
+cfgEdges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
+  where
+    go :: [DG.Edge] -> (Label, Successors) -> [DG.Edge]
+    go acc (p, c) = acc ++ map (p,) (successorsToBlockList' c)
 
 basicBlockToLabel :: CFG -> QBE.BlockIdent -> Maybe Label
 basicBlockToLabel CFG {cfgLabelMap = m} blkId = Map.lookup blkId m
@@ -75,7 +90,7 @@ successorsToBlockList cfg succs = map getBlock (successorsToBlockList' succs)
     getBlock :: Label -> QBE.BlockIdent
     getBlock label = fromJust $ IntMap.lookup label (cfgBlockMap cfg)
 
-successorsToIntSet :: Successors -> IntSet.IntSet
+successorsToIntSet :: Successors -> IntSet
 successorsToIntSet = IntSet.fromList . successorsToBlockList'
 
 ------------------------------------------------------------------------
@@ -90,7 +105,7 @@ returnIdent = (QBE.BlockIdent "=return", 1)
 identStart :: Label
 identStart = 2
 
-build' :: Map.Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, Successors)]
+build' :: Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, Successors)]
 build' labelMap = foldl go [(snd haltIdent, SuccNone), (snd returnIdent, SuccNone)]
   where
     getId :: QBE.BlockIdent -> Label
@@ -107,37 +122,41 @@ build' labelMap = foldl go [(snd haltIdent, SuccNone), (snd returnIdent, SuccNon
 build :: QBE.FuncDef -> CFG
 build func =
   CFG
-    { cfgFunction = func,
+    { cfgMaxBound = snd $ last blkIdLabels,
+      cfgFunction = func,
       cfgLabelMap = labelMap,
       cfgBlockMap = IntMap.fromList $ map swap blkIdLabels,
       cfgSuccessors = IntMap.fromList $ build' labelMap blocks
     }
   where
-    labelMap :: Map.Map QBE.BlockIdent Label
+    labelMap :: Map QBE.BlockIdent Label
     labelMap = Map.fromList blkIdLabels
 
     blocks :: [QBE.Block]
-    blocks = QBE.fBlock func
+    blocks = Map.elems $ QBE.fBlock func
 
     blkIdLabels :: [(QBE.BlockIdent, Label)]
     blkIdLabels = [haltIdent, returnIdent] ++ zip (map QBE.label blocks) [identStart ..]
 
+cfgGraph :: CFG -> Graph
+cfgGraph cfg = buildG (snd haltIdent, cfgMaxBound cfg) $ cfgEdges cfg
+
 ------------------------------------------------------------------------
 
-cfgToGraph :: CFG -> G.Graph
-cfgToGraph cfg@(CFG {cfgLabelMap = labelMap}) =
+cfgDomGraph :: CFG -> DG.Graph
+cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
   IntMap.fromList $ map (\l -> (l, succSet l)) (Map.elems labelMap)
   where
-    succSet :: Label -> IntSet.IntSet
+    succSet :: Label -> IntSet
     succSet l =
       successorsToIntSet
         (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
 
-cfgStartRoot :: CFG -> G.Rooted
-cfgStartRoot cfg = (identStart, cfgToGraph cfg)
+cfgStartRoot :: CFG -> DG.Rooted
+cfgStartRoot cfg = (identStart, cfgDomGraph cfg)
 
-cfgReturnRoot :: CFG -> G.Rooted
-cfgReturnRoot cfg = (snd returnIdent, cfgToGraph cfg)
+cfgReturnRoot :: CFG -> DG.Rooted
+cfgReturnRoot cfg = (snd returnIdent, cfgDomGraph cfg)
 
-cfgHaltRoot :: CFG -> G.Rooted
-cfgHaltRoot cfg = (snd returnIdent, cfgToGraph cfg)
+cfgHaltRoot :: CFG -> DG.Rooted
+cfgHaltRoot cfg = (snd returnIdent, cfgDomGraph cfg)

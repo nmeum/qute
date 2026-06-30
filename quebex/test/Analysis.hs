@@ -8,6 +8,7 @@ module Analysis (analTests) where
 import Data.Bifunctor (bimap)
 import Data.IntMap qualified as M
 import Data.IntSet qualified as S
+import Data.List (sort)
 import Data.Maybe (fromJust)
 import Language.QBE (parseAndFind)
 import Language.QBE.Analysis.CDG qualified as CDG
@@ -38,7 +39,7 @@ cdgEdges cfg cdg = map go (M.toList cdg)
 cfgEdges :: CFG.CFG -> [(String, String)]
 cfgEdges cfg =
   let toBlk = toBlkName cfg
-   in map (bimap toBlk toBlk) $ CFG.cfgEdges cfg
+   in sort $ map (bimap toBlk toBlk) (CFG.cfgEdges cfg)
 
 ------------------------------------------------------------------------
 
@@ -64,8 +65,8 @@ analTests =
             @?= Just [QBE.BlockIdent "next"]
 
           cfgEdges cfg
-            @?= [ ("@start", "@next"),
-                  ("@next", "@=return")
+            @?= [ ("@next", "@=return"),
+                  ("@start", "@next")
                 ]
 
           -- “If Y is control dependent on X then X must have two exits.“, in
@@ -90,8 +91,8 @@ analTests =
               cdg = CDG.computeCDG cfg
 
           cdgEdges cfg cdg
-            @?= [ ("@ifT", ["@start"]),
-                  ("@ifF", ["@start"])
+            @?= [ ("@ifF", ["@start"]),
+                  ("@ifT", ["@start"])
                 ],
       testCase "Compute CDG for code with loop" $
         do
@@ -120,8 +121,8 @@ analTests =
 
           cdgEdges cfg cdg
             @?= [ ("@=return", ["@for_cond"]),
-                  ("@for_cond", ["@for_cond"]),
                   ("@for_body", ["@for_cond"]),
+                  ("@for_cond", ["@for_cond"]),
                   ("@for_cont", ["@for_cond"])
                 ],
       testCase "Compute CDG for code with two paths to node" $
@@ -132,10 +133,10 @@ analTests =
               cdg = CDG.computeCDG cfg
 
           cdgEdges cfg cdg
-            @?= [ ("@if_true.3", ["@body.2"]),
-                  ("@if_true.5", ["@if_true.3"]),
+            @?= [ ("@if_false.4", ["@body.2", "@if_true.3"]),
                   ("@if_false.6", ["@if_true.3"]),
                   ("@if_join.7", ["@if_true.3"]),
-                  ("@if_false.4", ["@body.2", "@if_true.3"])
+                  ("@if_true.3", ["@body.2"]),
+                  ("@if_true.5", ["@if_true.3"])
                 ]
     ]
