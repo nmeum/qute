@@ -114,8 +114,8 @@
                         "git-checkout"
                         #:recursive? #t))
     (build-system haskell-build-system)
-    (inputs (list ghc-9.2))
-    (propagated-inputs (list bitwuzla)) ;; TODO: Wrapper on quebex-cli?
+    (inputs (list ghc-9.2
+                  bitwuzla)) ;needed for 'check.
     (native-inputs
       (list
         quebex
