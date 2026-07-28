@@ -64,13 +64,14 @@ These program components operate directly on QBE input programs.
 
 After cloning the repository, individual components can be installed using [Cabal] (e.g., `cabal install quebex-cli`).
 However, presently the codebase is mainly tested with selected GHC versions; therefore, installation using [Guix] is recommended.
-For example, in order to install the `quebex-cli` component using Guix:
+For example, in order to install the `quebex-cli` component and the [Bitwuzla] solver using Guix:
 
 ```
-$ guix time-machine -C .guix/channels.scm -- install -L .guix/modules/ quebex-cli
+$ guix time-machine -C .guix/channels.scm -- install -L .guix/modules/ quebex-cli bitwuzla
 ```
 
 Afterwards, if Guix is configured correctly, the aforementioned program components (`quebex` and `quebex-symex`) should be available in your `$PATH`.
+Note that you can also install additional packages, for example, the [cproc][guix cproc] or [simple-cc][guix simple-cc] QBE-based C compilers this way.
 The following section demonstrates usage of these components.
 
 ### Demonstration
@@ -234,3 +235,6 @@ This project uses the [REUSE Specification] to indicated used software license.
 [parser combinators]: https://en.wikipedia.org/wiki/Parser_combinator
 [abstract monad]: https://doi.org/10.1145/3607833
 [Cabal]: https://www.haskell.org/cabal/
+[Bitwuzla]: https://bitwuzla.github.io/
+[guix cproc]: https://hpc.guix.info/package/cproc
+[guix simple-cc]: https://hpc.guix.info/package/simple-cc
