@@ -1,0 +1,17 @@
+export function w $myfunc(w %a.L3.val)
+{
+@.L9
+	%a.L3 =l	alloc4	4
+		storew	%a.L3.val,%a.L3
+	%.L7 =w	loadsw	%a.L3
+	%.L8 =w	ceqw	%.L7,0
+		jnz	%.L8,@.L4,@.L6
+@.L6
+		ret	23
+@.L10
+		jmp	@.L5
+@.L4
+		ret	42
+@.L5
+		ret
+}

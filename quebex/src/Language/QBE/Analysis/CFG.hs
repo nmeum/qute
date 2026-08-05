@@ -153,7 +153,9 @@ cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
         (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
 
 cfgStartRoot :: CFG -> DG.Rooted
-cfgStartRoot cfg = (identStart, cfgDomGraph cfg)
+cfgStartRoot cfg@(CFG {cfgFunction = func}) =
+  let startIdent = fromJust $ basicBlockToLabel cfg (QBE.fStart func)
+   in (startIdent, cfgDomGraph cfg)
 
 cfgReturnRoot :: CFG -> DG.Rooted
 cfgReturnRoot cfg = (snd returnIdent, cfgDomGraph cfg)

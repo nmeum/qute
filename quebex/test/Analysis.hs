@@ -138,5 +138,12 @@ analTests =
                   ("@if_join.7", ["@if_true.3"]),
                   ("@if_true.3", ["@body.2"]),
                   ("@if_true.5", ["@if_true.3"])
-                ]
+                ],
+      testCase "Compute dominators for a simple-cc representation" $
+        do
+          func <- getFuncAndProg "simple-cc-branches.qbe" (QBE.GlobalIdent "myfunc")
+
+          let cfg = CFG.build func
+              (n, _) = CFG.cfgStartRoot cfg
+          CFG.labelToBasicBlock cfg n @?= Just (QBE.BlockIdent ".L9")
     ]
