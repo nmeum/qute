@@ -6,8 +6,6 @@
 module Analysis (analTests) where
 
 import Data.Bifunctor (bimap)
-import Data.IntMap qualified as M
-import Data.IntSet qualified as S
 import Data.List (sort)
 import Language.QBE (parseAndFind)
 import Language.QBE.Analysis.CDG qualified as CDG
@@ -28,12 +26,10 @@ getFuncAndProg fileName funcName =
 toBlkName :: CFG.CFG -> CFG.Label -> String
 toBlkName cfg = show . CFG.labelToIdent cfg
 
-cdgEdges :: CFG.CFG -> CDG.CDG -> [(String, [String])]
-cdgEdges cfg cdg = map go (M.toList cdg)
+cdgEdges :: CFG.CFG -> CDG.CDG -> [(String, String)]
+cdgEdges cfg = map go . CDG.edges
   where
-    go :: (CFG.Label, S.IntSet) -> (String, [String])
-    go (l, lst) =
-      (toBlkName cfg l, map (toBlkName cfg) (S.toList lst))
+    go (f, t) = (toBlkName cfg f, toBlkName cfg t)
 
 cfgEdges :: CFG.CFG -> [(String, String)]
 cfgEdges cfg =
@@ -70,7 +66,9 @@ analTests =
           -- “If Y is control dependent on X then X must have two exits.“, in
           -- this CFG there are no nodes with two exits: The CDG must be emtpy.
           let ret = CFG.identToLabel cfg $ QBE.BlockIdent "next"
-          cdgEdges cfg (CDG.computeCDG cfg ret) @?= [],
+              cdg = CDG.build cfg ret
+          cdgEdges cfg cdg @?= []
+          CDG.ctrlDeps cdg ret @?= Nothing,
       testCase "Generate CDG for code with single branch" $
         do
           func <-
@@ -92,11 +90,11 @@ analTests =
 
           let cfg = CFG.build func
               ret = CFG.identToLabel cfg (QBE.BlockIdent "return")
-              cdg = CDG.computeCDG cfg ret
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@ifF", ["@start"]),
-                  ("@ifT", ["@start"])
+            @?= [ ("@ifF", "@start"),
+                  ("@ifT", "@start")
                 ],
       testCase "Compute CDG for code with loop" $
         do
@@ -122,12 +120,12 @@ analTests =
 
           let cfg = CFG.build func
               ret = CFG.identToLabel cfg (QBE.BlockIdent "for_join")
-              cdg = CDG.computeCDG cfg ret
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@for_body", ["@for_cond"]),
-                  ("@for_cond", ["@for_cond"]),
-                  ("@for_cont", ["@for_cond"])
+            @?= [ ("@for_body", "@for_cond"),
+                  ("@for_cond", "@for_cond"),
+                  ("@for_cont", "@for_cond")
                 ],
       testCase "Compute CDG for code with two paths to node" $
         do
@@ -135,14 +133,15 @@ analTests =
 
           let cfg = CFG.build func
               ret = CFG.identToLabel cfg (QBE.BlockIdent "return")
-              cdg = CDG.computeCDG cfg ret
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@if_false.4", ["@body.2", "@if_true.3"]),
-                  ("@if_false.6", ["@if_true.3"]),
-                  ("@if_join.7", ["@if_true.3"]),
-                  ("@if_true.3", ["@body.2"]),
-                  ("@if_true.5", ["@if_true.3"])
+            @?= [ ("@if_false.4", "@body.2"),
+                  ("@if_false.4", "@if_true.3"),
+                  ("@if_false.6", "@if_true.3"),
+                  ("@if_join.7", "@if_true.3"),
+                  ("@if_true.3", "@body.2"),
+                  ("@if_true.5", "@if_true.3")
                 ],
       testCase "Compute dominators for a simple-cc representation" $
         do
