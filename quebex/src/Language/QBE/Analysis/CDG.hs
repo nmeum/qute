@@ -24,15 +24,15 @@ import Language.QBE.Analysis.Graph qualified as G
 
 type CDG = M.IntMap S.IntSet
 
-computeCDG :: CFG.CFG -> M.IntMap S.IntSet
-computeCDG cfg =
+computeCDG :: CFG.CFG -> CFG.Label -> M.IntMap S.IntSet
+computeCDG cfg label =
   -- From the CFG, generate a post-dominator tree and also convert this tree
   -- to an IntMap representation for efficient successor lookup in 'addCDGEdge'.
-  let rooted = CFG.cfgReturnRoot cfg
+  let rooted = (label, CFG.asDomGraph cfg)
       pdTree = G.pdomTree rooted
       pdtMap = M.fromList $ map (second S.fromList) (G.pdom rooted)
       pdtAnc = M.fromList (G.ancestors pdTree)
-   in foldr (uncurry $ addCDGEdge pdtMap pdtAnc) M.empty $ CFG.cfgEdges cfg
+   in foldr (uncurry $ addCDGEdge pdtMap pdtAnc) M.empty $ CFG.edges cfg
 
 -- This function essentially implements the algorithm described in Section 3.1
 -- of the Paper by Ferrante et al., using the algorithm by Cytron et al. may be
