@@ -18,7 +18,7 @@ module Language.QBE.Analysis.CFG
 
     -- * Dominator Analysis
     asDomGraph,
-    fromStart,
+    startNode,
   )
 where
 
@@ -126,8 +126,8 @@ asGraph cfg = buildG (identStart, cfgMaxBound cfg) $ edges cfg
 asDomGraph :: CFG -> DG.Graph
 asDomGraph cfg = IntMap.map IntSet.fromList (cfgSuccessors cfg)
 
-fromStart :: CFG -> DG.Rooted
-fromStart cfg@(CFG {cfgFunction = func}) = (startIdent, asDomGraph cfg)
-  where
-    startIdent :: Label
-    startIdent = identToLabel cfg (QBE.fStart func)
+-- | Determine the entry node of the 'CFG'. Useful, for example, to
+-- generated a 'DG.Rooted' representation for the control-flow graph.
+startNode :: CFG -> Label
+startNode cfg@(CFG {cfgFunction = func}) =
+  identToLabel cfg (QBE.fStart func)

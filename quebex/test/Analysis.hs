@@ -148,6 +148,6 @@ analTests =
           func <- getFuncAndProg "simple-cc-branches.qbe" (QBE.GlobalIdent "myfunc")
 
           let cfg = CFG.build func
-              (n, _) = CFG.fromStart cfg
-          CFG.labelToIdent cfg n @?= QBE.BlockIdent ".L9"
+          CFG.labelToIdent cfg (CFG.startNode cfg)
+            @?= QBE.BlockIdent ".L9"
     ]
