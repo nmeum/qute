@@ -15,6 +15,7 @@ module Language.QBE.Analysis.CFG
     -- * Graph Representation
     asGraph,
     edges,
+    bounds,
 
     -- * Dominator Analysis
     asDomGraph,
@@ -22,7 +23,7 @@ module Language.QBE.Analysis.CFG
   )
 where
 
-import Data.Graph (Graph, buildG)
+import Data.Graph (Bounds, Graph, buildG)
 import Data.IntMap (IntMap)
 import Data.IntMap qualified as IntMap
 import Data.IntSet qualified as IntSet
@@ -52,6 +53,11 @@ edges :: CFG -> [(Label, Label)]
 edges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
   where
     go acc (p, c) = acc ++ map (p,) c
+
+-- | Returns the bounds of the 'CFG'. This is useful, for example, to
+-- build a subgraph using 'Data.Graph.buildG'.
+bounds :: CFG -> Bounds
+bounds cfg = (0, cfgMaxBound cfg)
 
 -- | Convert a 'QBE.BlockIdent' to a CFG node 'Label'.
 --
