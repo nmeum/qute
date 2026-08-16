@@ -128,11 +128,8 @@ writeKTest conf@(KTestConf {confName = name}) pathID =
 
 ------------------------------------------------------------------------
 
-handleError :: Opts -> Maybe KTestConf -> Int -> EvalError -> IO ()
-handleError opts ktest n err = do
-  printErr
-  when (optErrExit opts) $
-    die "Exiting due to encountered error"
+showError :: Maybe KTestConf -> Int -> EvalError -> IO ()
+showError ktest n err = printErr
   where
     printErr = do
       hPutStrLn stderr $
@@ -161,11 +158,15 @@ exploreEntry opts ktest engine entry =
       lastPath <- gets expLastPath
       logLevel <- case pathErr lastPath of
         Just err -> liftIO $ do
-          handleError opts ktest n err
+          showError ktest n err
           pure LogErr
         Nothing -> pure LogAll
 
-      liftIO $ writeAssign ktest logLevel n (pathVars lastPath)
+      liftIO $ do
+        writeAssign ktest logLevel n (pathVars lastPath)
+        when (optErrExit opts && logLevel == LogErr) $
+          die "Exiting due to encountered error"
+
       if morePaths
         then go (n + 1) st
         else pure n
