@@ -141,7 +141,7 @@ handleError opts ktest n err = do
           ++ ": "
           ++ show err
           ++ "\n"
-          ++ "↳ "
+          ++ "-> "
           ++ printPath ktest
 
     printPath :: Maybe KTestConf -> String
