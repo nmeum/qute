@@ -19,7 +19,7 @@
 -- node /A/ is control dependent on /B/ if there is an edge /B → A/ so
 -- that the node is taken, as well as an edge so that it is not taken.
 module Language.QBE.Analysis.CDG
-  ( CDG,
+  ( CDG (cdgGraph),
     build,
     cdgCfg,
     cdgRoot,
@@ -45,12 +45,12 @@ data CDG
     cdgCfg :: CFG.CFG,
     -- | Root node of the 'CDG', used for determining post-dominance.
     cdgRoot :: CFG.Label,
-    cdgDeps :: IntMap IntSet
+    cdgGraph :: G.Graph
   }
 
 -- | All edges of the 'CDG', in an unspecified order.
 edges :: CDG -> [(CFG.Label, CFG.Label)]
-edges cdg = foldl go [] $ M.toList (cdgDeps cdg)
+edges cdg = foldl go [] $ M.toList (cdgGraph cdg)
   where
     go acc (p, c) = acc ++ map (p,) (S.toList c)
 
@@ -58,7 +58,7 @@ edges cdg = foldl go [] $ M.toList (cdgDeps cdg)
 -- If the node doesn't have any control dependencies, 'Nothing' is
 -- returned.
 ctrlDeps :: CDG -> CFG.Label -> Maybe IntSet
-ctrlDeps CDG {cdgDeps = cDeps} = (`M.lookup` cDeps)
+ctrlDeps CDG {cdgGraph = cDeps} = (`M.lookup` cDeps)
 
 ------------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ build cfg root =
   CDG
     { cdgCfg = cfg,
       cdgRoot = root,
-      cdgDeps = build' cfg root
+      cdgGraph = build' cfg root
     }
 
 build' :: CFG.CFG -> CFG.Label -> IntMap IntSet
