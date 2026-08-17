@@ -14,6 +14,7 @@ module Language.QBE.Analysis.CFG
 
     -- * Graph Representation
     asGraph,
+    nodes,
     edges,
     bounds,
 
@@ -47,6 +48,10 @@ data CFG
     cfgBlockMap :: IntMap QBE.BlockIdent,
     cfgSuccessors :: IntMap [Label]
   }
+
+-- | Returns a list of all graph nodes in an unspecified order.
+nodes :: CFG -> [Label]
+nodes = IntMap.keys . cfgBlockMap
 
 -- | Returns a list of graph edges in an unspecified order.
 edges :: CFG -> [(Label, Label)]
