@@ -10,6 +10,7 @@ module Language.QBE.Analysis.CFG
     build,
     identToLabel,
     labelToIdent,
+    labelToBlock,
     lookupSuccs,
 
     -- * Graph Representation
@@ -77,6 +78,15 @@ identToLabel CFG {cfgLabelMap = m} blkId =
 labelToIdent :: CFG -> Label -> QBE.BlockIdent
 labelToIdent CFG {cfgBlockMap = m} label =
   fromJust $ IntMap.lookup label m
+
+-- | Utility function to convert a node 'Label' to a 'QBE.Block'.
+-- Performs two \(O(\log n)\) lookups internally.
+--
+-- This function is partial, on an invalid 'Label', an error is thrown.
+labelToBlock :: CFG -> Label -> QBE.Block
+labelToBlock cfg label =
+  let blocks = QBE.fBlock $ cfgFunction cfg
+   in fromJust $ Map.lookup (labelToIdent cfg label) blocks
 
 -- | Mapping of 'Label' to its successors in the CFG, represented as an
 -- ordered list of zero, one, or two elements. A list with two elements
