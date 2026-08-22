@@ -12,38 +12,88 @@
 -- However, I found that the original paper by Ferrante et al. does a much better job at
 -- explaining what was implemented by Tristan Ravitch in llvm-analysis. Hence, the comments
 -- below mainly refer to that: https://doi.org/10.1145/24039.24041
-module Language.QBE.Analysis.CDG (CDG, computeCDG) where
+
+-- | This module implements a control dependency analysis, using a
+-- /control dependency graph/ (CDG) for more information on the concept
+-- refer to <https://doi.org/10.1145/24039.24041>. Roughly speaking, a
+-- node /A/ is control dependent on /B/ if there is an edge /B → A/ so
+-- that the node is taken, as well as an edge so that it is not taken.
+module Language.QBE.Analysis.CDG
+  ( CDG (cdgGraph),
+    build,
+    cdgCfg,
+    cdgRoot,
+    edges,
+    ctrlDeps,
+  )
+where
 
 import Data.Bifunctor (second)
+import Data.IntMap (IntMap)
 import Data.IntMap qualified as M
+import Data.IntSet (IntSet)
 import Data.IntSet qualified as S
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 import Language.QBE.Analysis.CFG qualified as CFG
 import Language.QBE.Analysis.Graph qualified as G
 
-type CDG = M.IntMap S.IntSet
+-- | A CDG signifying control-dependence between nodes in the 'CFG.CFG'.
+data CDG
+  = CDG
+  { -- | Underlying 'CFG.CFG' for which the CDG was built.
+    cdgCfg :: CFG.CFG,
+    -- | Root node of the 'CDG', used for determining post-dominance.
+    cdgRoot :: CFG.Label,
+    cdgGraph :: G.Graph
+  }
 
-computeCDG :: CFG.CFG -> M.IntMap S.IntSet
-computeCDG cfg =
+-- | All edges of the 'CDG', in an unspecified order.
+edges :: CDG -> [(CFG.Label, CFG.Label)]
+edges cdg = foldl go [] $ M.toList (cdgGraph cdg)
+  where
+    go acc (p, c) = acc ++ map (p,) (S.toList c)
+
+-- | Returns the control dependencies of a given node in the 'CFG.CFG'.
+-- If the node doesn't have any control dependencies, 'Nothing' is
+-- returned.
+ctrlDeps :: CDG -> CFG.Label -> Maybe IntSet
+ctrlDeps CDG {cdgGraph = cDeps} = (`M.lookup` cDeps)
+
+------------------------------------------------------------------------
+
+-- | Construct a new 'CDG' from an existing 'CFG.CFG'. The CDG is build
+-- based on the given 'CFG.Label' from the CFG, which is used to as the
+-- root of a post-dominator tree to establish a post-dominance
+-- relationship between nodes.
+build :: CFG.CFG -> CFG.Label -> CDG
+build cfg root =
+  CDG
+    { cdgCfg = cfg,
+      cdgRoot = root,
+      cdgGraph = build' cfg root
+    }
+
+build' :: CFG.CFG -> CFG.Label -> IntMap IntSet
+build' cfg label =
   -- From the CFG, generate a post-dominator tree and also convert this tree
   -- to an IntMap representation for efficient successor lookup in 'addCDGEdge'.
-  let rooted = CFG.cfgReturnRoot cfg
+  let rooted = (label, CFG.asDomGraph cfg)
       pdTree = G.pdomTree rooted
       pdtMap = M.fromList $ map (second S.fromList) (G.pdom rooted)
       pdtAnc = M.fromList (G.ancestors pdTree)
-   in foldr (uncurry $ addCDGEdge pdtMap pdtAnc) M.empty $ CFG.cfgEdges cfg
+   in foldr (uncurry $ addCDGEdge pdtMap pdtAnc) M.empty $ CFG.edges cfg
 
 -- This function essentially implements the algorithm described in Section 3.1
 -- of the Paper by Ferrante et al., using the algorithm by Cytron et al. may be
 -- more efficient and could be considered in the future.
 addCDGEdge ::
-  M.IntMap S.IntSet ->
-  M.IntMap [Int] ->
+  IntMap IntSet ->
+  IntMap [Int] ->
   CFG.Label ->
   CFG.Label ->
-  M.IntMap S.IntSet ->
-  M.IntMap S.IntSet
+  IntMap IntSet ->
+  IntMap IntSet
 addCDGEdge pdtMap pdtAnc a b acc
   -- Consider all edges (A, B) in the control flow graph such that B does not
   -- post-dominate M. If it does, we return 'acc' unmodified (insert nothing).
@@ -62,10 +112,10 @@ addCDGEdge pdtMap pdtAnc a b acc
           let deps = S.insert b $ lookupSucc b
            in foldr insertEdge acc (S.toList deps)
   where
-    insertEdge :: CFG.Label -> M.IntMap S.IntSet -> M.IntMap S.IntSet
+    insertEdge :: CFG.Label -> IntMap IntSet -> IntMap IntSet
     insertEdge blk = M.insertWith S.union blk (S.singleton a)
 
-    lookupSucc :: CFG.Label -> S.IntSet
+    lookupSucc :: CFG.Label -> IntSet
     lookupSucc l = fromMaybe S.empty $ M.lookup l pdtMap
 
     -- Returns true if 'x' post-dominates 'y'.

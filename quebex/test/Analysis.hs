@@ -6,10 +6,7 @@
 module Analysis (analTests) where
 
 import Data.Bifunctor (bimap)
-import Data.IntMap qualified as M
-import Data.IntSet qualified as S
 import Data.List (sort)
-import Data.Maybe (fromJust)
 import Language.QBE (parseAndFind)
 import Language.QBE.Analysis.CDG qualified as CDG
 import Language.QBE.Analysis.CFG qualified as CFG
@@ -27,19 +24,17 @@ getFuncAndProg fileName funcName =
    in readFile filePath >>= getFunction funcName
 
 toBlkName :: CFG.CFG -> CFG.Label -> String
-toBlkName cfg = show . fromJust . CFG.labelToBasicBlock cfg
+toBlkName cfg = show . CFG.labelToIdent cfg
 
-cdgEdges :: CFG.CFG -> CDG.CDG -> [(String, [String])]
-cdgEdges cfg cdg = map go (M.toList cdg)
+cdgEdges :: CFG.CFG -> CDG.CDG -> [(String, String)]
+cdgEdges cfg = map go . CDG.edges
   where
-    go :: (CFG.Label, S.IntSet) -> (String, [String])
-    go (l, lst) =
-      (toBlkName cfg l, map (toBlkName cfg) (S.toList lst))
+    go (f, t) = (toBlkName cfg f, toBlkName cfg t)
 
 cfgEdges :: CFG.CFG -> [(String, String)]
 cfgEdges cfg =
   let toBlk = toBlkName cfg
-   in sort $ map (bimap toBlk toBlk) (CFG.cfgEdges cfg)
+   in sort $ map (bimap toBlk toBlk) (CFG.edges cfg)
 
 ------------------------------------------------------------------------
 
@@ -61,17 +56,19 @@ analTests =
               \}\n"
 
           let cfg = CFG.build func
-          CFG.lookupSuccessors cfg (QBE.BlockIdent "start")
-            @?= Just [QBE.BlockIdent "next"]
+          let startLabel = CFG.identToLabel cfg $ QBE.BlockIdent "start"
+          map (CFG.labelToIdent cfg) (CFG.lookupSuccs cfg startLabel)
+            @?= [QBE.BlockIdent "next"]
 
           cfgEdges cfg
-            @?= [ ("@next", "@=return"),
-                  ("@start", "@next")
-                ]
+            @?= [("@start", "@next")]
 
           -- “If Y is control dependent on X then X must have two exits.“, in
           -- this CFG there are no nodes with two exits: The CDG must be emtpy.
-          cdgEdges cfg (CDG.computeCDG cfg) @?= [],
+          let ret = CFG.identToLabel cfg $ QBE.BlockIdent "next"
+              cdg = CDG.build cfg ret
+          cdgEdges cfg cdg @?= []
+          CDG.ctrlDeps cdg ret @?= Nothing,
       testCase "Generate CDG for code with single branch" $
         do
           func <-
@@ -82,17 +79,22 @@ analTests =
               \%val =w add 0, 1\n\
               \jnz %val, @ifT, @ifF\n\
               \@ifT\n\
-              \ret 1\n\
+              \%ret =w copy 1\n\
+              \jmp @return\n\
               \@ifF\n\
-              \ret 0\n\
+              \%ret =w copy 0\n\
+              \jmp @return\n\
+              \@return\n\
+              \ret %ret\n\
               \}\n"
 
           let cfg = CFG.build func
-              cdg = CDG.computeCDG cfg
+              ret = CFG.identToLabel cfg (QBE.BlockIdent "return")
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@ifF", ["@start"]),
-                  ("@ifT", ["@start"])
+            @?= [ ("@ifF", "@start"),
+                  ("@ifT", "@start")
                 ],
       testCase "Compute CDG for code with loop" $
         do
@@ -117,33 +119,35 @@ analTests =
               \}\n"
 
           let cfg = CFG.build func
-              cdg = CDG.computeCDG cfg
+              ret = CFG.identToLabel cfg (QBE.BlockIdent "for_join")
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@=return", ["@for_cond"]),
-                  ("@for_body", ["@for_cond"]),
-                  ("@for_cond", ["@for_cond"]),
-                  ("@for_cont", ["@for_cond"])
+            @?= [ ("@for_body", "@for_cond"),
+                  ("@for_cond", "@for_cond"),
+                  ("@for_cont", "@for_cond")
                 ],
       testCase "Compute CDG for code with two paths to node" $
         do
           func <- getFuncAndProg "disjunction.qbe" (QBE.GlobalIdent "main")
 
           let cfg = CFG.build func
-              cdg = CDG.computeCDG cfg
+              ret = CFG.identToLabel cfg (QBE.BlockIdent "return")
+              cdg = CDG.build cfg ret
 
           cdgEdges cfg cdg
-            @?= [ ("@if_false.4", ["@body.2", "@if_true.3"]),
-                  ("@if_false.6", ["@if_true.3"]),
-                  ("@if_join.7", ["@if_true.3"]),
-                  ("@if_true.3", ["@body.2"]),
-                  ("@if_true.5", ["@if_true.3"])
+            @?= [ ("@if_false.4", "@body.2"),
+                  ("@if_false.4", "@if_true.3"),
+                  ("@if_false.6", "@if_true.3"),
+                  ("@if_join.7", "@if_true.3"),
+                  ("@if_true.3", "@body.2"),
+                  ("@if_true.5", "@if_true.3")
                 ],
       testCase "Compute dominators for a simple-cc representation" $
         do
           func <- getFuncAndProg "simple-cc-branches.qbe" (QBE.GlobalIdent "myfunc")
 
           let cfg = CFG.build func
-              (n, _) = CFG.cfgStartRoot cfg
-          CFG.labelToBasicBlock cfg n @?= Just (QBE.BlockIdent ".L9")
+          CFG.labelToIdent cfg (CFG.startNode cfg)
+            @?= QBE.BlockIdent ".L9"
     ]

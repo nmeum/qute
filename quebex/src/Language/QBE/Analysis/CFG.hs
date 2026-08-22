@@ -6,30 +6,29 @@
 module Language.QBE.Analysis.CFG
   ( -- * Control Flow Graph
     Label,
-    CFG (cfgFunction, cfgLabelMap, cfgBlockMap, cfgSuccessors),
+    CFG (cfgFunction),
     build,
-    basicBlockToLabel,
-    labelToBasicBlock,
-    lookupSuccessors,
+    identToLabel,
+    labelToIdent,
+    labelToBlock,
+    lookupSuccs,
 
     -- * Graph Representation
-    cfgEdges,
-    cfgGraph,
+    asGraph,
+    nodes,
+    edges,
+    bounds,
 
     -- * Dominator Analysis
-    cfgDomGraph,
-    cfgStartRoot,
-    cfgReturnRoot,
-    cfgHaltRoot,
+    asDomGraph,
+    startNode,
   )
 where
 
-import Data.Graph (Graph, buildG)
+import Data.Graph (Bounds, Graph, buildG)
 import Data.IntMap (IntMap)
 import Data.IntMap qualified as IntMap
-import Data.IntSet (IntSet)
 import Data.IntSet qualified as IntSet
-import Data.List (singleton)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
@@ -37,88 +36,76 @@ import Data.Tuple (swap)
 import Language.QBE.Analysis.Graph qualified as DG
 import Language.QBE.Types qualified as QBE
 
+-- | Representation of a node in the 'CFG'.
 type Label = IntMap.Key
 
--- TODO: Need to figure this mess wrt. data types: Should this point to a Block
--- or a BlockIdent or a custom Block data structure which includes both? Hmhm…
+-- | A representation of the control-flow within a 'QBE.FuncDef'.
 data CFG
   = CFG
-  { cfgMaxBound :: Int,
+  { -- | Function for which this CFG was built.
     cfgFunction :: QBE.FuncDef,
+    cfgMaxBound :: Int,
     cfgLabelMap :: Map QBE.BlockIdent Label,
     cfgBlockMap :: IntMap QBE.BlockIdent,
-    cfgSuccessors :: IntMap Successors -- TODO: Use a Set or List here?
+    cfgSuccessors :: IntMap [Label]
   }
-  deriving (Show)
+
+-- | Returns a list of all graph nodes in an unspecified order.
+nodes :: CFG -> [Label]
+nodes = IntMap.keys . cfgBlockMap
 
 -- | Returns a list of graph edges in an unspecified order.
-cfgEdges :: CFG -> [DG.Edge]
-cfgEdges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
+edges :: CFG -> [(Label, Label)]
+edges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
   where
-    go :: [DG.Edge] -> (Label, Successors) -> [DG.Edge]
-    go acc (p, c) = acc ++ map (p,) (successorsToBlockList' c)
+    go acc (p, c) = acc ++ map (p,) c
 
-basicBlockToLabel :: CFG -> QBE.BlockIdent -> Maybe Label
-basicBlockToLabel CFG {cfgLabelMap = m} blkId = Map.lookup blkId m
+-- | Returns the bounds of the 'CFG'. This is useful, for example, to
+-- build a subgraph using 'Data.Graph.buildG'.
+bounds :: CFG -> Bounds
+bounds cfg = (0, cfgMaxBound cfg)
 
-labelToBasicBlock :: CFG -> Label -> Maybe QBE.BlockIdent
-labelToBasicBlock CFG {cfgBlockMap = m} label = IntMap.lookup label m
+-- | Convert a 'QBE.BlockIdent' to a CFG node 'Label'.
+--
+-- This function is partial, on an invalid 'Label', an error is thrown.
+identToLabel :: CFG -> QBE.BlockIdent -> Label
+identToLabel CFG {cfgLabelMap = m} blkId =
+  fromJust $ Map.lookup blkId m
 
-lookupSuccessors :: CFG -> QBE.BlockIdent -> Maybe [QBE.BlockIdent]
-lookupSuccessors cfg ident = do
-  label <- basicBlockToLabel cfg ident
-  successorsToBlockList cfg <$> IntMap.lookup label (cfgSuccessors cfg)
+-- | Convert a CFG node 'Label' to a 'QBE.BlockIdent'.
+--
+-- This function is partial, on an invalid 'Label', an error is thrown.
+labelToIdent :: CFG -> Label -> QBE.BlockIdent
+labelToIdent CFG {cfgBlockMap = m} label =
+  fromJust $ IntMap.lookup label m
+
+-- | Utility function to convert a node 'Label' to a 'QBE.Block'.
+-- Performs two \(O(\log n)\) lookups internally.
+--
+-- This function is partial, on an invalid 'Label', an error is thrown.
+labelToBlock :: CFG -> Label -> QBE.Block
+labelToBlock cfg label =
+  let blocks = QBE.fBlock $ cfgFunction cfg
+   in fromJust $ Map.lookup (labelToIdent cfg label) blocks
+
+-- | Mapping of 'Label' to its successors in the CFG, represented as an
+-- ordered list of zero, one, or two elements. A list with two elements
+-- represents a conditional jump where the left child is the is the true
+-- branch and the right child is the false branch. A list wih a single
+-- element signifies an unconditional jump. If the given node does not
+-- have any successors an empty list is returned.
+--
+-- This function is partial, on an invalid 'Label', an error is thrown.
+lookupSuccs :: CFG -> Label -> [Label]
+lookupSuccs CFG {cfgSuccessors = succs} label =
+  fromJust $ IntMap.lookup label succs
 
 ------------------------------------------------------------------------
 
--- A basic block can have one unconditional successor or two possible successors
--- in the case of a conditional jump. In QBE, there can never be more than two.
-data Successors
-  = SuccNone
-  | SuccUncond Label
-  | SuccCond Label Label
-  deriving (Show, Eq)
-
-successorsToBlockList' :: Successors -> [Label]
-successorsToBlockList' SuccNone = []
-successorsToBlockList' (SuccUncond label) = singleton label
-successorsToBlockList' (SuccCond ifT ifF) = [ifT, ifF]
-
-successorsToBlockList :: CFG -> Successors -> [QBE.BlockIdent]
-successorsToBlockList cfg succs = map getBlock (successorsToBlockList' succs)
-  where
-    getBlock :: Label -> QBE.BlockIdent
-    getBlock label = fromJust $ IntMap.lookup label (cfgBlockMap cfg)
-
-successorsToIntSet :: Successors -> IntSet
-successorsToIntSet = IntSet.fromList . successorsToBlockList'
-
-------------------------------------------------------------------------
-
-haltIdent :: (QBE.BlockIdent, Label)
-haltIdent = (QBE.BlockIdent "=halt", 0)
-
-returnIdent :: (QBE.BlockIdent, Label)
-returnIdent = (QBE.BlockIdent "=return", 1)
-
--- Keep in sync with 'haltIdent' and 'returnIdent'.
 identStart :: Label
-identStart = 2
+identStart = 0
 
-build' :: Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, Successors)]
-build' labelMap = foldl go [(snd haltIdent, SuccNone), (snd returnIdent, SuccNone)]
-  where
-    getId :: QBE.BlockIdent -> Label
-    getId ident = fromJust $ Map.lookup ident labelMap
-
-    go acc block@(QBE.Block {QBE.label = ident}) =
-      let succs = case QBE.term block of
-            QBE.Jump target -> SuccUncond (getId target)
-            QBE.Jnz _ i1 i2 -> SuccCond (getId i1) (getId i2)
-            QBE.Return _ -> SuccUncond $ snd returnIdent
-            QBE.Halt -> SuccUncond $ snd haltIdent
-       in (getId ident, succs) : acc
-
+-- | Construct a 'CFG' for a given function.
 build :: QBE.FuncDef -> CFG
 build func =
   CFG
@@ -136,29 +123,32 @@ build func =
     blocks = Map.elems $ QBE.fBlock func
 
     blkIdLabels :: [(QBE.BlockIdent, Label)]
-    blkIdLabels = [haltIdent, returnIdent] ++ zip (map QBE.label blocks) [identStart ..]
+    blkIdLabels = zip (map QBE.label blocks) [identStart ..]
 
-cfgGraph :: CFG -> Graph
-cfgGraph cfg = buildG (snd haltIdent, cfgMaxBound cfg) $ cfgEdges cfg
+build' :: Map QBE.BlockIdent Label -> [QBE.Block] -> [(IntMap.Key, [Label])]
+build' labelMap = foldl go []
+  where
+    toLabel :: QBE.BlockIdent -> Label
+    toLabel ident = fromJust $ Map.lookup ident labelMap
+
+    go acc block@(QBE.Block {QBE.label = ident}) =
+      let succs = case QBE.term block of
+            QBE.Jump target -> [toLabel target]
+            QBE.Jnz _ i1 i2 -> [toLabel i1, toLabel i2]
+            QBE.Return _ -> []
+            QBE.Halt -> []
+       in (toLabel ident, succs) : acc
 
 ------------------------------------------------------------------------
 
-cfgDomGraph :: CFG -> DG.Graph
-cfgDomGraph cfg@(CFG {cfgLabelMap = labelMap}) =
-  IntMap.fromList $ map (\l -> (l, succSet l)) (Map.elems labelMap)
-  where
-    succSet :: Label -> IntSet
-    succSet l =
-      successorsToIntSet
-        (fromJust $ IntMap.lookup l (cfgSuccessors cfg))
+asGraph :: CFG -> Graph
+asGraph cfg = buildG (identStart, cfgMaxBound cfg) $ edges cfg
 
-cfgStartRoot :: CFG -> DG.Rooted
-cfgStartRoot cfg@(CFG {cfgFunction = func}) =
-  let startIdent = fromJust $ basicBlockToLabel cfg (QBE.fStart func)
-   in (startIdent, cfgDomGraph cfg)
+asDomGraph :: CFG -> DG.Graph
+asDomGraph cfg = IntMap.map IntSet.fromList (cfgSuccessors cfg)
 
-cfgReturnRoot :: CFG -> DG.Rooted
-cfgReturnRoot cfg = (snd returnIdent, cfgDomGraph cfg)
-
-cfgHaltRoot :: CFG -> DG.Rooted
-cfgHaltRoot cfg = (snd returnIdent, cfgDomGraph cfg)
+-- | Determine the entry node of the 'CFG'. Useful, for example, to
+-- generated a 'DG.Rooted' representation for the control-flow graph.
+startNode :: CFG -> Label
+startNode cfg@(CFG {cfgFunction = func}) =
+  identToLabel cfg (QBE.fStart func)
