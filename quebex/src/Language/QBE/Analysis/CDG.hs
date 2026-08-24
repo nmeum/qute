@@ -19,10 +19,8 @@
 -- node /A/ is control dependent on /B/ if there is an edge /B → A/ so
 -- that the node is taken, as well as an edge so that it is not taken.
 module Language.QBE.Analysis.CDG
-  ( CDG (cdgGraph),
+  ( CDG (..),
     build,
-    cdgCfg,
-    cdgRoot,
     edges,
     ctrlDeps,
   )
@@ -45,6 +43,7 @@ data CDG
     cdgCfg :: CFG.CFG,
     -- | Root node of the 'CDG', used for determining post-dominance.
     cdgRoot :: CFG.Label,
+    -- | Graph representation of control-dependence.
     cdgGraph :: G.Graph
   }
 
