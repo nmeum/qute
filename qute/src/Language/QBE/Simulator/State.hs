@@ -55,7 +55,7 @@ data StackFrame v
     stkFp :: v
   }
 
--- | Create a new 'StackFrame' and push it onto the call stack.
+-- | Create a new t'StackFrame' and push it onto the call stack.
 newStackFrame ::
   (Simulator m v) =>
   -- | Definition of the functions to which this frame belongs.
@@ -70,12 +70,12 @@ newStackFrame f args variadicArgs = do
   pushStackFrame frame >> pure frame
 {-# INLINEABLE newStackFrame #-}
 
--- | Store a local variable with a given name and value in the given 'StackFrame'.
+-- | Store a local variable with a given name and value in the given t'StackFrame'.
 storeLocal :: QBE.LocalIdent -> v -> StackFrame v -> StackFrame v
 storeLocal ident value frame@(StackFrame {stkVars = v}) =
   frame {stkVars = Map.insert ident value v}
 
--- | Lookup a local variable in the current 'StackFrame'.
+-- | Lookup a local variable in the current t'StackFrame'.
 lookupLocal :: StackFrame v -> QBE.LocalIdent -> Maybe v
 lookupLocal (StackFrame {stkVars = v}) = flip Map.lookup v
 {-# INLINEABLE lookupLocal #-}
@@ -90,7 +90,7 @@ data SomeFunc m v
     SFuncDef QBE.FuncDef
 
 -- | This is an “abstract monad” representing the Simulator and allowing
--- interaction with an encapsulated Simulator state 'm'. Conceptually,
+-- interaction with an encapsulated Simulator state @m@. Conceptually,
 -- this monads describes the primitives based on which the semantics of
 -- the QBE intermediate representation are abstractly described in
 -- 'Language.QBE.Simulator'.
@@ -102,11 +102,11 @@ data SomeFunc m v
 --
 -- The idea is inspired by Bourgeat et al. <https://doi.org/10.1145/3607833>.
 class (E.ValueRepr v, MonadError EvalError m) => Simulator m v | m -> v where
-  -- | Check if a value of type 'ValueRepr' evaluates to true. This is used
+  -- | Check if a value of type 'E.ValueRepr' evaluates to true. This is used
   -- within "Language.QBE.Simulator" to implement conditional jumps.
   isTrue :: v -> m Bool
 
-  -- | Convert a value of type 'ValueRepr' to a 'MEM.Address' that can be
+  -- | Convert a value of type 'E.ValueRepr' to a 'MEM.Address' that can be
   -- used to index a "Language.QBE.Simulator.Memory".
   toAddress :: v -> m MEM.Address
 
@@ -119,10 +119,10 @@ class (E.ValueRepr v, MonadError EvalError m) => Simulator m v | m -> v where
   -- | Find a function by "text segment" address, used for the implementation of function pointers.
   findFuncByAddr :: MEM.Address -> m (Maybe (SomeFunc m v))
 
-  -- | Return the 'StackFrame' of the currently executed function.
+  -- | Return the t'StackFrame' of the currently executed function.
   activeFrame :: m (StackFrame v)
 
-  -- | Push a new 'StackFrame' onto the function call stack.
+  -- | Push a new t'StackFrame' onto the function call stack.
   pushStackFrame :: StackFrame v -> m ()
 
   -- | Pop the current stack frame from the function call stack.
@@ -177,7 +177,7 @@ runBinary ty op lhs rhs =
   liftMaybe TypingError (op lhs rhs) >>= subType ty
 {-# INLINEABLE runBinary #-}
 
--- | Modify the current 'StackFrame', e.g. to add a new local variable to it.
+-- | Modify the current t'StackFrame', e.g. to add a new local variable to it.
 -- If the function call stack is currently empty an 'EmptyStack' error is thrown.
 modifyFrame :: (Simulator m v) => (StackFrame v -> StackFrame v) -> m ()
 modifyFrame func = do
@@ -216,7 +216,7 @@ stackSpill val = do
   pure ptr
 {-# INLINEABLE stackSpill #-}
 
--- | Trigger a function return, popping its 'StackFrame' from the call stack
+-- | Trigger a function return, popping its t'StackFrame' from the call stack
 -- and updating both the stack and frame pointer.
 returnFromFunc :: (Simulator m v) => m ()
 returnFromFunc = popStackFrame >>= setSP . stkFp

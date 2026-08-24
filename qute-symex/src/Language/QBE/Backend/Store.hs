@@ -39,7 +39,7 @@ data Store
 empty :: StdGen -> Store
 empty = Store Map.empty Map.empty Map.empty
 
--- | Obtain symbolic values as a list of 'SimpleBV' expressions.
+-- | Obtain symbolic values as a list of "SimpleBV" expressions.
 sexprs :: Store -> [SMT.SExpr]
 sexprs = map SE.toSExpr . Map.elems . sValues
 
@@ -58,7 +58,7 @@ finalize solver store@(Store {sValues = m, defined = defs}) = do
     declareSymbolic n v =
       SMT.declareBV solver n $ SE.bitSize v
 
--- | Create a variable store from a 'Model'.
+-- | Create a variable store from a 'Model.Model'.
 setModel :: Store -> Model.Model -> Store
 setModel store model =
   store {cValues = Map.fromList $ Model.toList model}

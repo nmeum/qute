@@ -41,13 +41,13 @@ data CDG
   = CDG
   { -- | Underlying 'CFG.CFG' for which the CDG was built.
     cdgCfg :: CFG.CFG,
-    -- | Root node of the 'CDG', used for determining post-dominance.
+    -- | Root node of the t'CDG', used for determining post-dominance.
     cdgRoot :: CFG.Label,
     -- | Graph representation of control-dependence.
     cdgGraph :: G.Graph
   }
 
--- | All edges of the 'CDG', in an unspecified order.
+-- | All edges of the t'CDG', in an unspecified order.
 edges :: CDG -> [(CFG.Label, CFG.Label)]
 edges cdg = foldl go [] $ M.toList (cdgGraph cdg)
   where
@@ -61,7 +61,7 @@ ctrlDeps CDG {cdgGraph = cDeps} = (`M.lookup` cDeps)
 
 ------------------------------------------------------------------------
 
--- | Construct a new 'CDG' from an existing 'CFG.CFG'. The CDG is build
+-- | Construct a new t'CDG' from an existing 'CFG.CFG'. The CDG is build
 -- based on the given 'CFG.Label' from the CFG, which is used to as the
 -- root of a post-dominator tree to establish a post-dominance
 -- relationship between nodes.

@@ -15,7 +15,7 @@ import SimpleBV qualified as SMT
 newtype Model = Model [(String, SMT.Value)]
   deriving (Show, Eq)
 
--- | Get a new 'Model' for a list of input variables that should be contained in it.
+-- | Get a new 'Model.Model' for a list of input variables that should be contained in it.
 getModel :: SMT.Solver -> [SMT.SExpr] -> IO Model
 getModel solver inputVars = Model <$> SMT.getValues solver inputVars
 

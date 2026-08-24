@@ -36,7 +36,7 @@ import Data.Tuple (swap)
 import Language.QBE.Analysis.Graph qualified as DG
 import Language.QBE.Types qualified as QBE
 
--- | Representation of a node in the 'CFG'.
+-- | Representation of a node in the t'CFG'.
 type Label = IntMap.Key
 
 -- | A representation of the control-flow within a 'QBE.FuncDef'.
@@ -60,7 +60,7 @@ edges cfg = foldl go [] $ IntMap.toList (cfgSuccessors cfg)
   where
     go acc (p, c) = acc ++ map (p,) c
 
--- | Returns the bounds of the 'CFG'. This is useful, for example, to
+-- | Returns the bounds of the t'CFG'. This is useful, for example, to
 -- build a subgraph using 'Data.Graph.buildG'.
 bounds :: CFG -> Bounds
 bounds cfg = (0, cfgMaxBound cfg)
@@ -105,7 +105,7 @@ lookupSuccs CFG {cfgSuccessors = succs} label =
 identStart :: Label
 identStart = 0
 
--- | Construct a 'CFG' for a given function.
+-- | Construct a t'CFG' for a given function.
 build :: QBE.FuncDef -> CFG
 build func =
   CFG
@@ -147,7 +147,7 @@ asGraph cfg = buildG (identStart, cfgMaxBound cfg) $ edges cfg
 asDomGraph :: CFG -> DG.Graph
 asDomGraph cfg = IntMap.map IntSet.fromList (cfgSuccessors cfg)
 
--- | Determine the entry node of the 'CFG'. Useful, for example, to
+-- | Determine the entry node of the t'CFG'. Useful, for example, to
 -- generated a 'DG.Rooted' representation for the control-flow graph.
 startNode :: CFG -> Label
 startNode cfg@(CFG {cfgFunction = func}) =

@@ -50,14 +50,14 @@ class ValueRepr v where
 
   -- | Extend a value to the given 'QBE.ExtType'. The 'Bool' is true if
   -- the value should be sign-extended, otherwise it is zero-extended.
-  -- If the 'v' is a float or if the current size exceeds (or is equal to)
+  -- If the @v@ is a float or if the current size exceeds (or is equal to)
   -- the size of 'QBE.ExtType', then 'Nothing' is returned.
   extend :: QBE.ExtType -> Bool -> v -> Maybe v
 
-  -- | Extract the least significant bits of a 'v'. The bits to extract
-  -- are deduced from the given 'ExtType'. Returns 'Nothing' if the
-  -- 'ExtType' is a float type, if the value is a float, or if the size
-  -- of 'ExtType' exceeds the size of 'v'.
+  -- | Extract the least significant bits of a @v@. The bits to extract
+  -- are deduced from the given 'QBE.ExtType'. Returns 'Nothing' if the
+  -- 'QBE.ExtType' is a float type, if the value is a float, or if the size
+  -- of 'QBE.ExtType' exceeds the size of @v@.
   extract :: QBE.ExtType -> v -> Maybe v
 
   -- | Addition.

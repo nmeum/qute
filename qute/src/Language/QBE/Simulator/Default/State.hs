@@ -6,6 +6,7 @@
 module Language.QBE.Simulator.Default.State
   ( -- * Interpreter State
     Env (..),
+    DataMem, -- XXX: required by initData.
     mkEnv,
     initData,
     loadObj, -- TODO: Don't export this.
@@ -254,7 +255,7 @@ allocData startAddr dataDefs =
 
 ------------------------------------------------------------------------
 
--- | Unlift 'Control.Exception.IOException' handling into a generic 'StateT' monad.
+-- | Unlift 'Control.Exception.IOException' handling into a generic t'StateT' monad.
 --
 -- See also: <https://hackage.haskell.org/package/unliftio>.
 unliftCatch ::
@@ -272,9 +273,9 @@ newtype SimState v b a = SimState {unSimState :: StateT (Env v b) IO a}
 
 deriving instance MonadState (Env v b) (SimState v b)
 
--- | Implements 'MonadError' in 'SimState' via 'Control.Exception.IOException's.
--- This should be more performant than using 'ExceptT' monad transformer in
--- conjunction with 'StateT'.
+-- | Implements 'MonadError' in t'SimState' via 'Control.Exception.IOException's.
+-- This should be more performant than using t'Control.Monad.Except.ExceptT'
+-- monad transformer in conjunction with t'StateT'.
 instance MonadError Err.EvalError (SimState v b) where
   throwError = liftIO . throwIO
   catchError (SimState st) handler =

@@ -72,7 +72,7 @@ liftState (DS.SimState toLift) = do
 
   -- XXX: Since 'toLift' is run in the DS.SimState monad, it would
   -- use its 'throwError' implementation here. We want to use the
-  -- implementation of our 'SimState' though, hence we need to handle
+  -- implementation of our t'SimState' though, hence we need to handle
   -- IO exceptions here.
   result <- liftIO $ try (runStateT toLift defEnv)
   case result of
@@ -128,7 +128,7 @@ data ErrorState
     errStore :: ST.Store
   }
 
--- | Exception thrown upon encountered an 'ErrorState'.
+-- | Exception thrown upon encountered an t'ErrorState'.
 data ErrorPath
   = ErrorPath
   { pathInput :: ErrorState,
@@ -147,7 +147,7 @@ newtype SimState a = SimState {unSimState :: StateT Env IO a}
 
 deriving instance MonadState Env SimState
 
--- Implements 'MonadError' in 'SimState' via 'IOException's. On throw,
+-- Implements 'MonadError' in t'SimState' via 'IOException's. On throw,
 -- it also returns the relevant executor state by encapsulting it in
 -- an 'ErrorPath'.
 --

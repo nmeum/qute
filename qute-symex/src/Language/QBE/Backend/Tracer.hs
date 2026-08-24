@@ -66,7 +66,7 @@ appendCons :: ExecTrace -> SE.BitVector -> ExecTrace
 appendCons trace cons = trace ++ [(True, Branch True cons)]
 
 -- For a given execution trace, return an assignment (represented
--- as a 'Model') which statisfies all symbolic branch conditions.
+-- as a 'Model.Model') which statisfies all symbolic branch conditions.
 -- If such an assignment does not exist, then 'Nothing' is returned.
 --
 -- Throws a 'SolverError' on an unknown solver result (e.g., on timeout).

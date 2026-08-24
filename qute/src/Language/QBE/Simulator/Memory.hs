@@ -64,13 +64,13 @@ class Storable valTy byteTy where
   fromBytes :: QBE.LoadType -> [byteTy] -> Maybe valTy
 
 -- | Memory parameterized over the Array type (e.g. 'Data.Array.IO.IOUArray')
--- and a byte polymorphic representation (e.g. 'Word8').
+-- and a byte polymorphic representation (e.g. 'Data.Word.Word8').
 data Memory a v = Memory
   { memStart :: Address,
     memBytes :: a Address v
   }
 
--- | Create a new 'Memory' which starts at the given base address and
+-- | Create a new t'Memory' which starts at the given base address and
 -- has a maximum capacity (i.e., can store up to the given amount of bytes).
 -- The memory is not initialized, reading an uninitialized values results
 -- in an error.
@@ -80,7 +80,7 @@ mkMemory startAddr size = do
   return $ Memory startAddr ary
 
 -- | Translate global address to a memory-local address. That is, performs
--- address translation relative to the base address of the 'Memory'.
+-- address translation relative to the base address of the t'Memory'.
 toMemAddr :: Memory t a -> Address -> Address
 toMemAddr mem addr = addr - memStart mem
 
