@@ -3,10 +3,10 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
 packages:
-  quebex-syntax/
-  quebex-symex/
-  quebex-cli/
-  quebex/
+  qute-syntax/
+  qute-symex/
+  qute-cli/
+  qute/
 
 -- Ensure that benchmarks and tests are always build to catch API breakage.
 tests: True

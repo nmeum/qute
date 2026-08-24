@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2025 Sören Tempel <soeren+git@soeren-tempel.net>
 SPDX-License-Identifier: GPL-3.0-only
 -->
 
-## README
+## Qute
 
 A work-in-progress software analysis framework built around the [QBE] intermediate language.
 
@@ -19,7 +19,7 @@ To overcome these issues, maintainers of analysis tooling need to constantly inv
 In order to reduce the maintenance burden, this project attempts to investigates the utilization of another intermediate language for software analysis: [QBE].
 QBE is a much [smaller-scale project][QBE vs LLVM] than LLVM and thereby offers a higher degree of stability.
 Further, QBE is simpler than LLVM (e.g., providing fewer operations) and thereby eases the implementation of analysis techniques.
-Nonetheless, there exist compiler frontends that can emit a representation in the QBE intermediate representation (which can then be analyzed using quebex!).
+Nonetheless, there exist compiler frontends that can emit a representation in the QBE intermediate representation (which can then be analyzed using Qute!).
 For example, [SCC], [cproc], or the [Hare compiler][Hare].
 
 ### Status
@@ -29,13 +29,13 @@ A lot of the desired functionality is already there, but not fully developed and
 However, all major features of the [QBE specification][QBE v1.3] are nowadays implemented to some degree.
 Consequentially, it is possible to process QBE programs emitted by existing compiler frontends such as the [cproc] C11 compiler.
 In terms of analysis features, the implementation currently focuses on dynamic analysis techniques (primarily [symbolic execution]).
-Unfortunately, there is basically no documentation for the API and the provided command-line frontends (`quebex` and `quebex-symex`) are presently very rudimentary.
+Unfortunately, there is basically no documentation for the API and the provided command-line frontends (`qute` and `qute-symex`) are presently very rudimentary.
 
 ### Architecture
 
 The foundation of this project is a formal, yet executable, description of the QBE intermediate language.
 At the time of writing, it targets [v1.3 of the QBE specification][QBE v1.3].
-The syntax is specified using [literate Haskell][literate programming] and [parser combinators] in the `quebex-syntax` library.
+The syntax is specified using [literate Haskell][literate programming] and [parser combinators] in the `qute-syntax` library.
 The language semantics are expressed in a modular way by distinguishing abstract and actual semantics.
 *Abstract semantics* of the QBE language are described in terms of a `Simulator` monad (i.e., an [abstract monad]).
 This monad must then be instantiated, whereby *actual semantics* are specified.
@@ -47,30 +47,30 @@ Presently, the following instantiations are supported:
 The former is primarily useful for simulation of programs written in the QBE intermediate language.
 The latter intended for automated software testing using [symbolic execution] and—as demonstrated below—can be used to automatically generate test inputs.
 
-The abstract description of the QBE semantics, in terms of the `Simulator` monad, and its concrete instantiation are provided by the `quebex` library.
-The symbolic semantics are implemented by a separate `quebex-symex` library.
+The abstract description of the QBE semantics, in terms of the `Simulator` monad, and its concrete instantiation are provided by the `qute` library.
+The symbolic semantics are implemented by a separate `qute-symex` library.
 Additional semantics (e.g., for [abstract interpretation]) can be implemented by building on top of these existing libraries.
 
-Further, executable programs are provided by the `quebex-cli` component.
+Further, executable programs are provided by the `qute-cli` component.
 These programs can be used directly from a shell, without interacting with the Haskell codebase.
 Presently the following executable program components are available:
 
-1. `quebex`: A simulator for QBE programs built on top of the concrete semantics.
-2. `quebex-symex`: An automated software testing tool facilitating the symbolic semantics.
+1. `qute`: A simulator for QBE programs built on top of the concrete semantics.
+2. `qute-symex`: An automated software testing tool facilitating the symbolic semantics.
 
 These program components operate directly on QBE input programs.
 
 ### Installation
 
-After cloning the repository, individual components can be installed using [Cabal] (e.g., `cabal install quebex-cli`).
+After cloning the repository, individual components can be installed using [Cabal] (e.g., `cabal install qute-cli`).
 However, presently the codebase is mainly tested with selected GHC versions; therefore, installation using [Guix] is recommended.
-For example, in order to install the `quebex-cli` component and the [Bitwuzla] solver using Guix:
+For example, in order to install the `qute-cli` component and the [Bitwuzla] solver using Guix:
 
 ```
-$ guix time-machine -C .guix/channels.scm -- install -L .guix/modules/ quebex-cli bitwuzla
+$ guix time-machine -C .guix/channels.scm -- install -L .guix/modules/ qute-cli bitwuzla
 ```
 
-Afterwards, if Guix is configured correctly, the aforementioned program components (`quebex` and `quebex-symex`) should be available in your `$PATH`.
+Afterwards, if Guix is configured correctly, the aforementioned program components (`qute` and `qute-symex`) should be available in your `$PATH`.
 Note that you can also install additional packages, for example, the [cproc][guix cproc] or [simple-cc][guix simple-cc] QBE-based C compilers this way.
 The following section demonstrates usage of these components.
 
@@ -94,7 +94,7 @@ int main(void) {
 }
 ```
 
-In order to concretly execute this program using `quebex`, we need to obtain an equivalent representation in QBE.
+In order to concretly execute this program using `qute`, we need to obtain an equivalent representation in QBE.
 To this end, we can invoke the [cproc] compiler as follows:
 
 ```
@@ -104,11 +104,11 @@ $ cproc -emit-qbe hello.c
 The resulting QBE file can then be executed with the concrete semantics using:
 
 ```
-$ quebex hello.qbe
+$ qute hello.qbe
 Hello, World!
 ```
 
-Note that `quebex` is only able to invoke the `puts(3)` function because it intercepts its execution, providing a "simulated" version of it.
+Note that `qute` is only able to invoke the `puts(3)` function because it intercepts its execution, providing a "simulated" version of it.
 Presently, only a limited amount of standard library functions are intercepted in this way.
 As such, interactions with the file system or more complex output functions (e.g. `printf(3)`) are currently not supported.
 
@@ -124,11 +124,11 @@ As an example, consider the following C program:
 // Convert a memory region to an unconstrained symbolic value. Like calloc(3), it can
 // account for memory regions which store multiple elements (nelem) of a specific size
 // (elsiz). The give name is used to identify the symbolic variable and must be unique.
-extern void quebex_make_symbolic(void *ptr, size_t nelem, size_t elsiz, const char *name);
+extern void qute_make_symbolic(void *ptr, size_t nelem, size_t elsiz, const char *name);
 
 int main(void) {
 	int a;
-	quebex_make_symbolic(&a, 1, sizeof(a), "a");
+	qute_make_symbolic(&a, 1, sizeof(a), "a");
 	if (a == 42) {
 		puts("you found the answer");
 	} else {
@@ -145,10 +145,10 @@ This program can be compiled using the QBE-based [cproc] C11 compiler as follows
 $ cproc -emit-qbe example.c
 ```
 
-The resulting QBE representation (`example.qbe`) can be symbolically executed using quebex-symex:
+The resulting QBE representation (`example.qbe`) can be symbolically executed using `qute-symex`:
 
 ```
-$ quebex-symex --write-tests tests/ example.qbe
+$ qute-symex --write-tests tests/ example.qbe
 ```
 
 This will yield the following output:
@@ -162,7 +162,7 @@ Amount of paths: 2
 ```
 
 This indicates that we found two execution paths through our program based on the symbolic variable `a`.
-Due to the `--write-tests` option, quebex-symex will create a `tests/` directory that contains test inputs in the [ktest format][KLEE ktest], one for each execution path.
+Due to the `--write-tests` option, `qute-symex` will create a `tests/` directory that contains test inputs in the [ktest format][KLEE ktest], one for each execution path.
 These files can be inspected with the `ktest-tool` from [KLEE] (which is included in the Guix development environment described below).
 For example:
 
@@ -182,7 +182,7 @@ object 0: text: *...
 
 This tells us that the second execution path, where the program prints `you found the answer`, was triggered with `a1 := 42`.
 From these files, we can—for example—automatically [generate high-coverage test cases][KLEE OSDI].
-In the future, it will be possible to replay selected `.ktest` files using `quebex-cli`.
+In the future, it will be possible to replay selected `.ktest` files using `qute-cli`.
 
 ### Design Goals
 

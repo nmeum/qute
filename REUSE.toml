@@ -10,30 +10,30 @@ SPDX-License-Identifier = "GPL-3.0-only"
 
 # We don't want to force comment headers for test files.
 [[annotations]]
-path = "quebex-syntax/test/golden/*.qbe"
+path = "qute-syntax/test/golden/*.qbe"
 SPDX-FileCopyrightText = "2025 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"
 
 # We don't want to force comment headers for test files.
 [[annotations]]
-path = "quebex-symex/test/golden/*.qbe"
+path = "qute-symex/test/golden/*.qbe"
 SPDX-FileCopyrightText = "2025 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"
 
 # Machine-generated files as obtained by `cproc -emit-qbe`.
 [[annotations]]
-path = "quebex/**/*.qbe"
+path = "qute/**/*.qbe"
 SPDX-FileCopyrightText = "2025 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"
 
 # Machine-generated files as obtained by `cproc -emit-qbe`.
 [[annotations]]
-path = "quebex-symex/**/*.qbe"
+path = "qute-symex/**/*.qbe"
 SPDX-FileCopyrightText = "2025 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"
 
 # .ktest files are binary files, often generated using KLEE.
 [[annotations]]
-path = "quebex-cli/test/testdata/*.ktest"
+path = "qute-cli/test/testdata/*.ktest"
 SPDX-FileCopyrightText = "2025 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"

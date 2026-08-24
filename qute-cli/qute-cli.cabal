@@ -1,0 +1,87 @@
+cabal-version:      3.4
+name:               qute-cli
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            GPL-3.0-only
+-- license-file:
+author:             Sören Tempel
+maintainer:         soeren+git@soeren-tempel.net
+-- copyright:
+category:           Language
+build-type:         Simple
+-- extra-doc-files:
+-- extra-source-files:
+
+common warnings
+    -- -Wall-missed-specializations can be useful too
+    ghc-options: -Wall
+
+common opts
+    ghc-options: -fspecialise-aggressively
+
+library
+    import:           warnings, opts
+    hs-source-dirs:   src
+    default-language: GHC2021
+
+    build-depends:
+      base,
+      binary,
+      bytestring,
+      containers,
+      qute,
+      qute-symex,
+      qute-syntax,
+      optparse-applicative >=0.17.0.0
+
+    exposed-modules:
+      Data.KTest,
+      Language.QBE.CmdLine
+
+executable qute
+    import:               warnings, opts
+    main-is:              Main.hs
+    hs-source-dirs:       app/qute
+    default-language:     GHC2021
+    build-depends:
+      base,
+      qute,
+      qute-cli,
+      qute-syntax,
+      optparse-applicative
+
+executable qute-symex
+    import:               warnings, opts
+    main-is:              Main.hs
+    hs-source-dirs:       app/qute-symex
+    default-language:     GHC2021
+    build-depends:
+      base,
+      qute,
+      qute-cli,
+      qute-symex,
+      qute-syntax,
+      mtl,
+      filepath,
+      binary,
+      directory,
+      optparse-applicative
+
+test-suite qute-cli-test
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+
+    other-modules:
+      KTest
+
+    build-depends:
+        base,
+        binary,
+        bytestring,
+        qute-cli,
+        tasty        >=1.4.3,
+        tasty-hunit  >=0.10
