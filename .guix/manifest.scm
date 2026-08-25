@@ -10,16 +10,16 @@
              (gnu packages haskell-apps)
              (gnu packages license)
              (gnu packages version-control)
-             (quebex-packages))
+             (qute-packages))
 
 ;; This setup here is inspired by the guile-git Guix setup.
 ;; See https://gitlab.com/guile-git/guile-git/-/tree/v0.10.0/.guix
 
 (concatenate-manifests
-  (list (package->development-manifest quebex)
-        (package->development-manifest quebex-syntax)
-        (package->development-manifest quebex-symex)
-        (package->development-manifest quebex-cli)
+  (list (package->development-manifest qute)
+        (package->development-manifest qute-syntax)
+        (package->development-manifest qute-symex)
+        (package->development-manifest qute-cli)
 
         ;; Extra packages, useful for development purposes.
         (packages->manifest
@@ -33,4 +33,4 @@
             cproc
             git
             lhs2tex
-            quebex-cli))))
+            qute-cli))))
