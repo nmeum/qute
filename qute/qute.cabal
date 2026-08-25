@@ -56,15 +56,15 @@ library
     default-language: GHC2021
 
     build-depends:
-      base,
-      array,
-      deepseq,
-      template-haskell,
-      qute-syntax,
-      containers,
-      exceptions,
-      parsec,
-      mtl
+      base >= 4.16.4.0 && < 4.23,
+      array >= 0.5.4.0 && < 0.6,
+      deepseq >= 1.4.6.1 && < 1.6,
+      template-haskell >= 2.18.0.0 && <  2.25,
+      qute-syntax == 0.1.*,
+      containers >= 0.6.5.1 && < 0.9,
+      exceptions >= 0.10.4 && < 0.11,
+      parsec >= 3.1.15 && < 3.19,
+      mtl >= 2.2.2 && < 2.4
 
     other-modules:
       Language.QBE.Simulator.Default.Generator

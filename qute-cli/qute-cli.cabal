@@ -37,14 +37,14 @@ library
     default-language: GHC2021
 
     build-depends:
-      base,
-      binary,
-      bytestring,
-      containers,
-      qute,
-      qute-symex,
-      qute-syntax,
-      optparse-applicative >=0.17.0.0
+      base >= 4.16.4.0 && < 4.23,
+      binary >= 0.8.9.0 && < 0.9,
+      bytestring >= 0.11.4.0 && < 0.13,
+      containers >= 0.6.5.1 && < 0.9,
+      qute == 0.1.*,
+      qute-symex == 0.1.*,
+      qute-syntax == 0.1.*,
+      optparse-applicative >=0.17.0.0 && < 0.20
 
     exposed-modules:
       Data.KTest,
@@ -73,10 +73,10 @@ executable qute-symex
       qute-cli,
       qute-symex,
       qute-syntax,
-      mtl,
-      filepath,
+      mtl >= 2.2.2 && < 2.4,
+      filepath >= 1.4.2.2 && < 1.6,
       binary,
-      directory,
+      directory >= 1.3.6.2 && < 1.4,
       optparse-applicative
 
 test-suite qute-cli-test
