@@ -1,17 +1,24 @@
 cabal-version:      3.4
 name:               qute-syntax
 version:            0.1.0.0
--- synopsis:
--- description:
+synopsis:           This package provides a parser for the QBE intermediate language.
+description:
+  This library provides a parser for the [QBE intermediate language](https://c9x.me/compile/)
+  and algebraic data types to represent various QBE constructs. This package is the foundation
+  of the [Qute](https://hackage.haskell.org/package/qute) software analysis framework.
 license:            GPL-3.0-only AND BSD-2-Clause AND MIT
 -- license-file:
 author:             Sören Tempel
-maintainer:         soeren+git@soeren-tempel.net
+maintainer:         soeren+hackage@soeren-tempel.net
 -- copyright:
 category:           Language
 build-type:         Simple
--- extra-doc-files:
--- extra-source-files:
+homepage:           https://git.8pit.net/qute
+bug-reports:        https://github.com/nmeum/qute/issues
+
+source-repository head
+    type: git
+    location: https://git.8pit.net/qute.git
 
 common warnings
     ghc-options: -Wall

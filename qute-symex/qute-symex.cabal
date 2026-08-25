@@ -1,17 +1,25 @@
 cabal-version:      3.4
 name:               qute-symex
 version:            0.1.0.0
--- synopsis:
--- description:
+synopsis:           A symbolic execution engine for the QBE intermediate language.
+description:
+  Based on the formal semantics of the [Qute](https://hackage.haskell.org/package/qute) package,
+  this library provides a [symbolic execution](https://en.wikipedia.org/wiki/Symbolic_execution)
+  engine for the QBE intermediate language. Thereby, it enables formal reasoning about a software
+  under test using [SMT solvers](https://en.wikipedia.org/wiki/Satisfiability_modulo_theories).
 license:            GPL-3.0-only AND MIT
 -- license-file:
 author:             Sören Tempel
-maintainer:         soeren+git@soeren-tempel.net
+maintainer:         soeren+hackage@soeren-tempel.net
 -- copyright:
 category:           Language
 build-type:         Simple
--- extra-doc-files:
--- extra-source-files:
+homepage:           https://git.8pit.net/qute
+bug-reports:        https://github.com/nmeum/qute/issues
+
+source-repository head
+    type: git
+    location: https://git.8pit.net/qute.git
 
 common warnings
     -- -Wall-missed-specializations can be useful too
