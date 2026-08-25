@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               qute-cli
-version:            0.1.0.0
+version:            0.1.0
 synopsis:           Command-line interface for the Qute software analysis framework.
 description:
   This package provides a command-line interface for the software analysis framework

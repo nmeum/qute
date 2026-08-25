@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               qute
-version:            0.1.0.0
+version:            0.1.0
 synopsis:           A software analysis framework built around the QBE intermediate language.
 description:
   This library provides formal semantics for the [QBE intermediate language](https://c9x.me/compile/)
