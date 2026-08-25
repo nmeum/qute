@@ -7,6 +7,9 @@ description:
   this library provides a [symbolic execution](https://en.wikipedia.org/wiki/Symbolic_execution)
   engine for the QBE intermediate language. Thereby, it enables formal reasoning about a software
   under test using [SMT solvers](https://en.wikipedia.org/wiki/Satisfiability_modulo_theories).
+
+  The underlying vision behind Qute's symbolic execution engine is further described in a
+  [separate paper](https://www.ibr.cs.tu-bs.de/vss/Publications/2026/tempel_26_qute.pdf).
 license:            GPL-3.0-only AND MIT
 -- license-file:
 author:             Sören Tempel

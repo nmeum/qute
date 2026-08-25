@@ -25,6 +25,9 @@ description:
   Similar dynamic software testing techniques can be implemented using this library. Additionally,
   there is some preliminary support for static analysis as well through the
   "Language.QBE.Analysis.CFG" module.
+
+  More information on the underlying idea and vision behind Qute is available in a
+  [separate paper](https://www.ibr.cs.tu-bs.de/vss/Publications/2026/tempel_26_qute.pdf).
 license:            GPL-3.0-only AND MIT AND BSD-3-Clause
 -- license-file:
 author:             Sören Tempel
