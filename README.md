@@ -25,12 +25,12 @@ The foundation of this project is a formal, yet executable, description of the Q
 At the time of writing, it targets [v1.3 of the QBE specification][QBE v1.3].
 The syntax is specified using [literate Haskell][literate programming] and [parser combinators] in the [`qute-syntax`][Hackage qute-syntax] library.
 The language semantics are expressed in a modular way by distinguishing abstract and actual semantics.
-*Abstract semantics* of the QBE language are described in terms of a `Simulator` monad (i.e., an [abstract monad]).
+*Abstract semantics* of the QBE language are described in terms of a [`Simulator`] monad (i.e., an [abstract monad]).
 This monad must then be instantiated, whereby *actual semantics* are specified.
 Presently, the following instantiations are supported:
 
-1. Concrete semantics, provided by `Language.QBE.Simulator.Default.State`.
-2. [Symbolic][symbolic execution] (specifically [concolic][concolic testing]) semantics through `Language.QBE.Simulator.Concolic.State`.
+1. Concrete semantics, provided by [`Language.QBE.Simulator.Default.State`].
+2. [Symbolic][symbolic execution] (specifically [concolic][concolic testing]) semantics through [`Language.QBE.Simulator.Concolic.State`].
 
 The former is primarily useful for simulation of programs written in the QBE intermediate language.
 The latter is intended for automated software testing using [symbolic execution] and—as demonstrated below—can be used to automatically generate test inputs.
@@ -244,3 +244,6 @@ This project uses the [REUSE Specification] to indicated used software license.
 [dynamic software analysis]: https://en.wikipedia.org/wiki/Dynamic_program_analysis
 [static software analysis]: https://en.wikipedia.org/wiki/Static_program_analysis
 [ASYDE]: https://www.ibr.cs.tu-bs.de/vss/Publications/2026/tempel_26_qute.pdf
+[`Simulator`]: https://hackage-content.haskell.org/package/qute/docs/Language-QBE-Simulator-State.html#t:Simulator
+[`Language.QBE.Simulator.Default.State`]: https://hackage-content.haskell.org/package/qute/docs/Language-QBE-Simulator-Default-State.html
+[`Language.QBE.Simulator.Concolic.State`]: https://hackage-content.haskell.org/package/qute-symex/docs/Language-QBE-Simulator-Concolic-State.html
