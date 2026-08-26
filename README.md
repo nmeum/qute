@@ -6,36 +6,32 @@ SPDX-License-Identifier: GPL-3.0-only
 
 ## Qute
 
-A work-in-progress software analysis framework built around the [QBE] intermediate language.
+Qute is a work-in-progress software analysis framework built around the [QBE] intermediate language.
+Architecturally, it is composed of [several][Hackage qute-syntax] [modular][Hackage qute] [Haskell][Hackage qute-symex] [libraries][Hackage qute-cli], which enable the implementation of [static][static software analysis] and [dynamic][dynamic software analysis] software analysis techniques for QBE programs.
+The foundation of the framework is a formal (yet executable) description of the QBE specification, which is implemented using an [abstract monad].
+Currently, Qute focuses primarily on [dynamic software analysis] through [symbolic execution].
+
+For further details, see the **[Qute paper][ASYDE]**.
 
 ### Motivation
 
-Existing analysis frameworks are predominantly built around [LLVM].
-Unfortunately, LLVM is a fast-moving target with constant changes and updates to its intermediate representation.
-Therefore, tooling built on LLVM often requires dated LLVM versions (e.g., [KLEE] currently [recommends LLVM 13][KLEE LLVM] released in 2022).
-Obtaining these LLVM versions can be cumbersome and often hinders employment of these tools.
-To overcome these issues, maintainers of analysis tooling need to constantly invest time to catch up with LLVM releases instead of focusing on improving their analysis framework.
-
-In order to reduce the maintenance burden, this project attempts to investigates the utilization of another intermediate language for software analysis: [QBE].
-QBE is a much [smaller-scale project][QBE vs LLVM] than LLVM and thereby offers a higher degree of stability.
-Further, QBE is simpler than LLVM (e.g., providing fewer operations) and thereby eases the implementation of analysis techniques.
-Nonetheless, there exist compiler frontends that can emit a representation in the QBE intermediate representation (which can then be analyzed using Qute!).
-For example, [SCC], [cproc], or the [Hare compiler][Hare].
+Existing software analysis frameworks are predominantly built around [LLVM] (e.g., [KLEE]).
+In contrast to LLVM, QBE is a much [smaller-scale project][QBE vs LLVM] and explicitly designed to be “extremely hackable”.
+Thereby, QBE makes it easier to experiment with modification of the intermediate representation.
+Qute is a framework that enables such experiments for [dynamic software analysis] tasks.
+For example, in a [recent workshop paper][ASYDE], we have used Qute to speed up software analysis using [symbolic execution] by adding custom jump instructions to QBE.
 
 ### Status
 
-I currently consider this a vertical prototype.
-A lot of the desired functionality is already there, but not fully developed and tested.
-However, all major features of the [QBE specification][QBE v1.3] are nowadays implemented to some degree.
-Consequentially, it is possible to process QBE programs emitted by existing compiler frontends such as the [cproc] C11 compiler.
-In terms of analysis features, the implementation currently focuses on dynamic analysis techniques (primarily [symbolic execution]).
-Unfortunately, there is basically no documentation for the API and the provided command-line frontends (`qute` and `qute-symex`) are presently very rudimentary.
+Qute is still in early stages of development, not all desired functionality has been implemented and bugs are to be expected in the existing functionality.
+Nonetheless, it supports all relevant features of the [QBE specification][QBE v1.3] and is thus compatible with existing frontends for QBE.
+This includes the [cproc] and [SCC] (with an [upstreamed patch][SCC patch]) C compilers as well as the compiler for the [Hare programming language][Hare].
 
 ### Architecture
 
 The foundation of this project is a formal, yet executable, description of the QBE intermediate language.
 At the time of writing, it targets [v1.3 of the QBE specification][QBE v1.3].
-The syntax is specified using [literate Haskell][literate programming] and [parser combinators] in the `qute-syntax` library.
+The syntax is specified using [literate Haskell][literate programming] and [parser combinators] in the [`qute-syntax`][Hackage qute-syntax] library.
 The language semantics are expressed in a modular way by distinguishing abstract and actual semantics.
 *Abstract semantics* of the QBE language are described in terms of a `Simulator` monad (i.e., an [abstract monad]).
 This monad must then be instantiated, whereby *actual semantics* are specified.
@@ -46,12 +42,10 @@ Presently, the following instantiations are supported:
 
 The former is primarily useful for simulation of programs written in the QBE intermediate language.
 The latter intended for automated software testing using [symbolic execution] and—as demonstrated below—can be used to automatically generate test inputs.
+Central to this end is the abstract description of QBE semantics which is provided, together with a concrete instantiation, by the [`qute`][Hackage qute] library.
+Further, a symbolic instantiation is provided in a separate [`qute-symex`][Hackage qute-symex] library.
 
-The abstract description of the QBE semantics, in terms of the `Simulator` monad, and its concrete instantiation are provided by the `qute` library.
-The symbolic semantics are implemented by a separate `qute-symex` library.
-Additional semantics (e.g., for [abstract interpretation]) can be implemented by building on top of these existing libraries.
-
-Further, executable programs are provided by the `qute-cli` component.
+Further, executable programs are provided by through [`qute-cli`][Hackage qute-cli].
 These programs can be used directly from a shell, without interacting with the Haskell codebase.
 Presently the following executable program components are available:
 
@@ -62,8 +56,14 @@ These program components operate directly on QBE input programs.
 
 ### Installation
 
-After cloning the repository, individual components can be installed using [Cabal] (e.g., `cabal install qute-cli`).
-However, presently the codebase is mainly tested with selected GHC versions; therefore, installation using [Guix] is recommended.
+All Haskell libraries provided in this repository are [available on Hackage][Hackage qute] and can hence be installed directly using [Cabal], the Haskell language package manager.
+As an example, `qute-cli` can be installed using:
+
+```
+$ cabal install qute-cli
+```
+
+However, to obtain a compatible GHC toolchain and external software (such as constraint solvers), installation using [Guix] is recommended.
 For example, in order to install the `qute-cli` component and the [Bitwuzla] solver using Guix:
 
 ```
@@ -72,14 +72,13 @@ $ guix time-machine -C .guix/channels.scm -- install -L .guix/modules/ qute-cli 
 
 Afterwards, if Guix is configured correctly, the aforementioned program components (`qute` and `qute-symex`) should be available in your `$PATH`.
 Note that you can also install additional packages, for example, the [cproc][guix cproc] or [simple-cc][guix simple-cc] QBE-based C compilers this way.
-The following section demonstrates usage of these components.
 
 ### Demonstration
 
-This framework is primarily *intended to be used as a library*, allowing the implementation of both static and dynamic analysis techniques based on QBE.
-Presently, it focuses on dynamic analysis, and sufficient documentation of the library interface is still lacking.
-Nonetheless, it is already capable of executing QBE representations of complex C code (e.g., as emitted by [cproc]).
-In order to experiment with the current capabilities, the following subsections demonstrate utilization of the aforementioned program components.
+Qute shines when used as a library to implement custom static and dynamic analysis techniques based on QBE.
+For details in this regard, refer to the [Hackage documentation][Hackage qute] of the provided Haskell libraries.
+Additionally, the [`qute-cli`][Hackage qute-cli] package provides several program components which can be used without writing your own Haskell code.
+The following subsections demonstrate the utilization of this program components.
 
 #### Concrete Execution
 
@@ -211,12 +210,13 @@ This project uses the [REUSE Specification] to indicated used software license.
 [QBE]: https://c9x.me/compile/
 [QBE vs LLVM]: https://c9x.me/compile/doc/llvm.html
 [QBE v1.3]: https://c9x.me/compile/doc/il.html
+[QBE jumps]: https://c9x.me/compile/doc/il.html#Jumps
 [LLVM]: https://llvm.org/
 [KLEE]: https://klee-se.org
-[KLEE LLVM]: https://klee-se.org/releases/docs/v3.1/build-llvm13/
 [KLEE OSDI]: https://www.usenix.org/legacy/events/osdi08/tech/full_papers/cadar/cadar.pdf#page=9
 [KLEE ktest]: https://klee-se.org/releases/docs/v3.1/tutorials/testing-function/#klee-generated-test-cases
 [SCC]: https://www.simple-cc.org/
+[SCC patch]: https://git.simple-cc.org/scc/commit/575a2d87cac49174b7f53aa6ac5f9186c2165697.html
 [cproc]: https://sr.ht/~mcf/cproc/
 [Hare]: https://harelang.org/
 [Haskell]: https://haskell.org/
@@ -230,7 +230,6 @@ This project uses the [REUSE Specification] to indicated used software license.
 [Guix]: https://guix.gnu.org
 [symbolic execution]: https://en.wikipedia.org/wiki/Symbolic_execution
 [concolic testing]: https://en.wikipedia.org/wiki/Concolic_testing
-[abstract interpretation]: https://en.wikipedia.org/wiki/Abstract_interpretation
 [literate programming]: https://en.wikipedia.org/wiki/Literate_programming
 [parser combinators]: https://en.wikipedia.org/wiki/Parser_combinator
 [abstract monad]: https://doi.org/10.1145/3607833
@@ -238,3 +237,10 @@ This project uses the [REUSE Specification] to indicated used software license.
 [Bitwuzla]: https://bitwuzla.github.io/
 [guix cproc]: https://hpc.guix.info/package/cproc
 [guix simple-cc]: https://hpc.guix.info/package/simple-cc
+[Hackage qute-symex]: https://hackage.haskell.org/package/qute-symex
+[Hackage qute-syntax]: https://hackage.haskell.org/package/qute-syntax
+[Hackage qute-cli]: https://hackage.haskell.org/package/qute-cli
+[Hackage qute]: https://hackage.haskell.org/package/qute
+[dynamic software analysis]: https://en.wikipedia.org/wiki/Dynamic_program_analysis
+[static software analysis]: https://en.wikipedia.org/wiki/Static_program_analysis
+[ASYDE]: https://www.ibr.cs.tu-bs.de/vss/Publications/2026/tempel_26_qute.pdf
