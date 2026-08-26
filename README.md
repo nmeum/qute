@@ -16,8 +16,8 @@ For further details, see the **[Qute paper][ASYDE]**.
 ### Status
 
 Qute is still in early stages of development, not all desired functionality has been implemented and bugs are to be expected in the existing functionality.
-Nonetheless, it supports all relevant features of the [QBE specification][QBE v1.3] and is thus compatible with existing frontends for QBE.
-This includes the [cproc] and [SCC] (with an [upstreamed patch][SCC patch]) C compilers as well as the compiler for the [Hare programming language][Hare].
+Nonetheless, it supports all relevant features of the [QBE specification][QBE v1.3] and is thus compatible with existing compiler frontends for QBE.
+This includes the [cproc] and [SCC] (with an [upstreamed patch][SCC patch]) C compilers as well as the [Hare compiler][Hare].
 
 ### Architecture
 
@@ -33,11 +33,11 @@ Presently, the following instantiations are supported:
 2. [Symbolic][symbolic execution] (specifically [concolic][concolic testing]) semantics through `Language.QBE.Simulator.Concolic.State`.
 
 The former is primarily useful for simulation of programs written in the QBE intermediate language.
-The latter intended for automated software testing using [symbolic execution] and—as demonstrated below—can be used to automatically generate test inputs.
-Central to this end is the abstract description of QBE semantics which is provided, together with a concrete instantiation, by the [`qute`][Hackage qute] library.
+The latter is intended for automated software testing using [symbolic execution] and—as demonstrated below—can be used to automatically generate test inputs.
+Central to this end is the abstract description of QBE semantics that is provided, together with a concrete instantiation, by the [`qute`][Hackage qute] library.
 Further, a symbolic instantiation is provided in a separate [`qute-symex`][Hackage qute-symex] library.
 
-Further, executable programs are provided by through [`qute-cli`][Hackage qute-cli].
+Additionally, executable programs are provided through [`qute-cli`][Hackage qute-cli].
 These programs can be used directly from a shell, without interacting with the Haskell codebase.
 Presently the following executable program components are available:
 
