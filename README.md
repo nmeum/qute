@@ -13,14 +13,6 @@ Currently, Qute focuses primarily on [dynamic software analysis] through [symbol
 
 For further details, see the **[Qute paper][ASYDE]**.
 
-### Motivation
-
-Existing software analysis frameworks are predominantly built around [LLVM] (e.g., [KLEE]).
-In contrast to LLVM, QBE is a much [smaller-scale project][QBE vs LLVM] and explicitly designed to be “extremely hackable”.
-Thereby, QBE makes it easier to experiment with modification of the intermediate representation.
-Qute is a framework that enables such experiments for [dynamic software analysis] tasks.
-For example, in a [recent workshop paper][ASYDE], we have used Qute to speed up software analysis using [symbolic execution] by adding custom jump instructions to QBE.
-
 ### Status
 
 Qute is still in early stages of development, not all desired functionality has been implemented and bugs are to be expected in the existing functionality.
