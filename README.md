@@ -175,13 +175,13 @@ This tells us that the second execution path, where the program prints `you foun
 From these files, we can—for example—automatically [generate high-coverage test cases][KLEE OSDI].
 In the future, it will be possible to replay selected `.ktest` files using `qute-cli`.
 
-### Tutorial
+### Tutorials
 
-More practical examples regarding utilization of Qute are available separately:
+More practical examples wrt. utilization of Qute and symbolic execution are available separately:
 
 * [Executing Hare Programs using Qute](https://notes.8pit.net/notes/zwts.html)
 * [Validating Hare’s Sort Module using Symbolic Execution](https://notes.8pit.net/notes/y7n8.html)
-* [An Introduction to Automated Software Testing using Symbolic Execution](https://media.ccc.de/v/ho26-146-an-introduction-to-automated-software-testing-using-symbolic-execution)
+* [An Introduction to Automated Software Testing using Symbolic Execution](https://media.ccc.de/v/ho26-146-an-introduction-to-automated-software-testing-using-symbolic-execution) (uses [KLEE] instead of Qute)
 
 ### Design Goals
 
