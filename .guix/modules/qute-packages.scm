@@ -3,7 +3,8 @@
 ;; SPDX-License-Identifier: GPL-3.0-only
 
 (define-module (qute-packages)
-  #:use-module (guix) ; XXX: this helps 'current-source-directory'
+  #:use-module ((ice-9 popen) #:select (open-pipe*))
+  #:use-module ((ice-9 rdelim) #:select (read-string))
   #:use-module (guix transformations) ; XXX: needed for 'simple-cc'
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module ((gnu packages c) #:prefix c:)
@@ -21,8 +22,16 @@
   #:use-module (guix git-download)
   #:use-module (guix packages))
 
+(define (pipe-command command)
+  (let* ((port (apply open-pipe* OPEN_READ command))
+         (output (string-trim-right (read-string port))))
+    (close-port port)
+    output))
+
 (define %srcdir
-  (string-append (current-source-directory) "/../.."))
+  (pipe-command '("git" "rev-parse" "--show-toplevel")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: This can be removed once scc-0.2 has been released.
 ;; See <https://git.simple-cc.org/scc/commit/575a2d87cac49174b7f53aa6ac5f9186c2165697.html>.
