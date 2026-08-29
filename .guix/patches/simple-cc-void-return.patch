@@ -1,0 +1,61 @@
+From 575a2d87cac49174b7f53aa6ac5f9186c2165697 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=B6ren=20Tempel?= <soeren+git@soeren-tempel.net>
+Date: Wed, 19 Aug 2026 20:32:01 +0200
+Subject: [PATCH] Don't specify a QBE return type for C functions with void
+ return type
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Without this patch, SCC currently emits QBE functions that have a "w"
+return type for C functions that have a void return type. However, in
+the return statement of these functions, it doesn't return a value.
+Depending on the reader's interpretation, one could argue that this is
+in violation of the QBE specification, which states: “All return values
+of this function must have [the specified] return type” [1]. Arguably, a
+ret instruction without an argument does not have a "w" return type.
+qbe(1) itself accepts this, but other tooling built around QBE may not.
+
+With this patch, functions with zero-sized types are now represented as
+not having a return type in the QBE representation. Further, the emitted
+QBE call instruction no longer assigns the return value of functions
+with a void return type to a temporary.
+
+This was discovered while executing SCC's emitted QBE representation
+using quebex, a software analysis framework that comes with its own
+standalone implementation of the QBE specification [2].
+
+[1]: https://c9x.me/compile/doc/il.html#Functions
+[2]: https://git.8pit.net/quebex
+---
+ src/cmd/scc-cc/cc2/qbe/code.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/cmd/scc-cc/cc2/qbe/code.c b/src/cmd/scc-cc/cc2/qbe/code.c
+index 908be4de..f0813f9a 100644
+--- a/src/cmd/scc-cc/cc2/qbe/code.c
++++ b/src/cmd/scc-cc/cc2/qbe/code.c
+@@ -411,7 +411,10 @@ writeout(void)
+ 
+ 	if (curfun->kind == SGLOB)
+ 		fputs("export ", stdout);
+-	printf("function %s %s(", size2stack(&curfun->rtype), symname(curfun));
++	printf("function ");
++	if (curfun->rtype.size > 0)
++		printf("%s ", size2stack(&curfun->rtype));
++	printf("%s(", symname(curfun));
+ 
+ 	/* declare formal parameters */
+ 	sep = "";
+@@ -519,8 +522,9 @@ call(void)
+ 
+ 	strcpy(to, addr2txt(&pc->to));
+ 	strcpy(from, addr2txt(&pc->from1));
+-	printf("\t%s =%s\tcall\t%s(",
+-	       to, size2stack(&sym->type), from);
++	if (sym->type.size > 0)
++		printf("\t%s =%s", to, size2stack(&sym->type));
++	printf("\tcall\t%s(", from);
+ }
+ 
+ static void
