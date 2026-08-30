@@ -92,6 +92,8 @@ data Engine
     expLastPath :: PathResult
   }
 
+-- | Create a new t'Engine', the caller is responsible for calling
+-- 'SimpleBV.stop' on the given 'SimpleBV.Solver'.
 newEngine :: Env -> SMT.Solver -> Engine
 newEngine env solver =
   Engine
