@@ -5,7 +5,7 @@
 
 module SimpleBV
   ( SExpr,
-    SMT.Solver,
+    SMT.Solver (..),
     SMT.defaultConfig,
     SMT.newLogger,
     SMT.newLoggerWithHandle,
