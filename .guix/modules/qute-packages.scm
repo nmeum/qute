@@ -71,19 +71,24 @@
 (define-public ghc-simple-smt
   (package
     (name "ghc-simple-smt")
-    (version "0.9.8")
+    (version "0.9.9")
     (source
      (origin
        (method url-fetch)
        (uri (hackage-uri "simple-smt" version))
        (sha256
-        (base32 "0imimkpzbd013gadkg7sc05jr70lffaij4ijzk368iw8xgvgxyf9"))))
+        (base32 "03naikilcai2x5jmvl0k98g2cz4qki39pc2y1kfi0qkjrcm8cvxp"))))
     (build-system haskell-build-system)
+    (arguments
+     `(#:tests? #f
+       #:configure-flags '("lib:simple-smt")))
     (properties '((upstream-name . "simple-smt")))
     (home-page "https://github.com/yav/simple-smt")
-    (synopsis "Simple way to interact with an SMT solver process.")
+    (synopsis "Simple library to interact with SMT solvers via SMT-LIB")
     (description
-     "This package provides a simple way to interact with an SMT solver process.")
+     "This package provides a simple library to interact with an external
+@acronym{SMT, satisfiability modulo theories} solver (such as @code{z3})
+via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
     (license license:bsd-3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
