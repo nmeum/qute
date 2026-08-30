@@ -39,6 +39,8 @@ explore' input funcName params = do
   (prog, entry) <- parseAndFind (QBE.GlobalIdent funcName) input
 
   defEnv <- mkEnv prog 0 128 Nothing
-  engine <- newEngine defEnv <$> defSolver
-  exploreFunc engine entry $
-    map (second QBE.Base) params
+  solver <- defSolver
+
+  let engine = newEngine defEnv solver
+  exploreFunc engine entry (map (second QBE.Base) params)
+    <* SMT.stop solver
