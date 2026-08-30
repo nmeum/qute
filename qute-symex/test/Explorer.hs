@@ -19,6 +19,7 @@ import Language.QBE.Simulator.Explorer
     newEngine,
   )
 import Language.QBE.Types qualified as QBE
+import SimpleBV qualified as SMT
 import System.FilePath ((</>))
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -35,9 +36,11 @@ findAssign ((PathResult _ eTrace a) : xs) toFind
 explore' :: Program -> QBE.FuncDef -> [(String, QBE.BaseType)] -> IO [PathResult]
 explore' prog entry params = do
   defEnv <- mkEnv prog 0 128 Nothing
-  engine <- newEngine defEnv <$> defSolver
+  solver <- defSolver
+  let engine = newEngine defEnv solver
 
-  exploreFunc engine entry $ map (second QBE.Base) params
+  res <- exploreFunc engine entry $ map (second QBE.Base) params
+  SMT.stop solver >> pure res
 
 getFuncAndProg :: FilePath -> QBE.GlobalIdent -> IO (Program, QBE.FuncDef)
 getFuncAndProg fileName funcName =
