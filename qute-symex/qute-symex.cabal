@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               qute-symex
-version:            0.1.0
+version:            0.1.1
 synopsis:           A symbolic execution engine for the QBE intermediate language.
 description:
   Based on the formal semantics of the [Qute](https://hackage.haskell.org/package/qute) package,
