@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               qute-syntax
-version:            0.1.0
+version:            0.1.1
 synopsis:           This package provides a parser for the QBE intermediate language.
 description:
   This library provides a parser for the [QBE intermediate language](https://c9x.me/compile/)
