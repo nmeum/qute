@@ -63,6 +63,7 @@ test-suite qute-syntax-test
         process,
         filepath,
         containers,
+        directory,
         tasty        >=1.4.3,
         tasty-hunit  >=0.10,
         tasty-golden >=2.3.5,
