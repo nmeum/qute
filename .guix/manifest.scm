@@ -7,8 +7,10 @@
              (guix profiles)
              (gnu packages base)
              (gnu packages c)
+             (gnu packages curl)
              (gnu packages haskell-apps)
              (gnu packages license)
+             (gnu packages nss)
              (gnu packages version-control)
              (qute-packages))
 
@@ -25,6 +27,8 @@
         (packages->manifest
           (list
             cabal-install
+            curl ;needed by Cabal.
+            nss-certs ;needed by Cabal.
             coreutils
             ktest-tool
             hlint
