@@ -29,7 +29,8 @@ common warnings
     ghc-options: -Wall
 
 common opts
-    ghc-options: -fspecialise-aggressively
+    -- -threaded required by simple-smt, see <https://github.com/yav/simple-smt/issues/28>.
+    ghc-options: -fspecialise-aggressively -threaded
 
 library
     import:           warnings, opts
@@ -86,7 +87,7 @@ benchmark qute-symex
       qute-symex
 
 test-suite qute-symex-test
-    import:           warnings
+    import:           warnings, opts
     default-language: GHC2021
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test

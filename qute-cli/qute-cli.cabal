@@ -31,6 +31,10 @@ common warnings
 common opts
     ghc-options: -fspecialise-aggressively
 
+common opts-symex
+    -- -threaded required by simple-smt, see <https://github.com/yav/simple-smt/issues/28>.
+    ghc-options: -threaded -rtsopts "-with-rtsopts=-N1"
+
 library
     import:           warnings, opts
     hs-source-dirs:   src
@@ -63,7 +67,7 @@ executable qute
       optparse-applicative
 
 executable qute-symex
-    import:               warnings, opts
+    import:               warnings, opts, opts-symex
     main-is:              Main.hs
     hs-source-dirs:       app/qute-symex
     default-language:     GHC2021
