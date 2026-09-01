@@ -9,7 +9,6 @@ import Language.QBE (parseAndFind)
 import Language.QBE.Simulator.Concolic.State (mkEnv)
 import Language.QBE.Simulator.Explorer (defSolver, exploreFunc, newEngine)
 import Language.QBE.Types qualified as QBE
-import SimpleBV qualified as SMT
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.Golden.Advanced
@@ -24,14 +23,12 @@ exploreQBE filePath params = do
   (prog, func) <- readFile filePath >>= parseAndFind entryFunc
 
   defEnv <- mkEnv prog 0 128 Nothing
-  solver <- defSolver
-  let engine = newEngine defEnv solver
+  engine <- newEngine defEnv <$> defSolver
 
   traces <-
     exploreFunc engine func $
       map (second QBE.Base) params
-
-  SMT.stop solver >> pure (length traces)
+  pure $ length traces
 
 simpleCmp :: Result -> Result -> IO (Maybe String)
 simpleCmp expt act =
