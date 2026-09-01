@@ -79,7 +79,7 @@ benchmark qute-symex
       base,
       criterion ^>= 1.6.4.0,
       mtl,
-      simple-smt,
+      simple-smt >= 1.0.1,
       process,
       filepath,
       qute,
