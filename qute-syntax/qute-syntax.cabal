@@ -15,6 +15,7 @@ category:           Language
 build-type:         Simple
 homepage:           https://git.8pit.net/qute
 bug-reports:        https://github.com/nmeum/qute/issues
+extra-source-files: test/golden/*.qbe
 
 source-repository head
     type: git
