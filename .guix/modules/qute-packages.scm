@@ -71,13 +71,13 @@
 (define-public ghc-simple-smt
   (package
     (name "ghc-simple-smt")
-    (version "0.9.9")
+    (version "1.0.1")
     (source
      (origin
        (method url-fetch)
        (uri (hackage-uri "simple-smt" version))
        (sha256
-        (base32 "03naikilcai2x5jmvl0k98g2cz4qki39pc2y1kfi0qkjrcm8cvxp"))))
+        (base32 "0iw0kg4ga5g393x4j9xqgrlr6mzwm5xdjg9mjp7jc2q7igrfcx5z"))))
     (build-system haskell-build-system)
     (arguments
      `(#:tests? #f
