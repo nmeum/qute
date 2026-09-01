@@ -35,13 +35,10 @@ eqConcrete :: Maybe SE.BitVector -> Maybe DE.RegVal -> IO Bool
 eqConcrete (Just sym) (Just con) = do
   s <- getSolver
   symVal <- SMT.getValue s (SE.toSExpr sym)
-
-  let res =
-        case (symVal, con) of
-          (SMT.Bits 32 sv, DE.VWord cv) -> sv == fromIntegral cv
-          (SMT.Bits 64 sv, DE.VLong cv) -> sv == fromIntegral cv
-          _ -> False
-  SMT.stop s >> pure res
+  case (symVal, con) of
+    (SMT.Bits 32 sv, DE.VWord cv) -> pure $ sv == fromIntegral cv
+    (SMT.Bits 64 sv, DE.VLong cv) -> pure $ sv == fromIntegral cv
+    _ -> pure False
 eqConcrete Nothing Nothing = pure True
 eqConcrete _ _ = pure False
 
@@ -191,7 +188,6 @@ storeTests =
           s <- getSolver
           let bytes = (MEM.toBytes (E.fromLit (QBE.Base QBE.Word) 0xdeadbeef :: SE.BitVector) :: [SE.BitVector])
           values <- mapM (SMT.getValue s . SE.toSExpr) bytes
-          _ <- SMT.stop s
           values @?= [SMT.Bits 8 0xef, SMT.Bits 8 0xbe, SMT.Bits 8 0xad, SMT.Bits 8 0xde],
       testCase "Convert bitvector to bytes and back" $
         do
@@ -203,7 +199,6 @@ storeTests =
           value <- case MEM.fromBytes (QBE.LBase QBE.Word) bytes of
             Just x -> SMT.getValue s (SE.toSExpr x) <&> Just
             Nothing -> pure Nothing
-          _ <- SMT.stop s
           value @?= Just (SMT.Bits 32 0xdeadbeef)
     ]
 
@@ -219,7 +214,6 @@ valueReprTests =
           let v2 = E.fromLit (QBE.Base QBE.Word) 128
 
           expr <- SMT.getValue s (SE.toSExpr $ fromJust $ v1 `E.add` v2)
-          _ <- SMT.stop s
           expr @?= SMT.Bits 32 0xff,
       testCase "add incompatible values" $
         do
@@ -242,8 +236,6 @@ valueReprTests =
           ext2Val <- SMT.getValue s (SE.toSExpr ext2)
           ext2Val @?= SMT.Bits 32 0xffffffab
 
-          _ <- SMT.stop s
-
           let v3 = E.fromLit (QBE.Base QBE.Word) 0xdeadbeef :: SE.BitVector
           E.extend (QBE.Base QBE.Word) True v3 @?= Nothing
           E.extend QBE.Byte True v3 @?= Nothing,
@@ -260,8 +252,6 @@ valueReprTests =
           let ex2 = fromJust $ E.extract QBE.HalfWord value
           ex2Val <- SMT.getValue s (SE.toSExpr ex2)
           ex2Val @?= SMT.Bits 16 0xbeef
-
-          _ <- SMT.stop s
 
           E.extract (QBE.Base QBE.Word) value @?= Just value
           E.extract (QBE.Base QBE.Long) value @?= Nothing

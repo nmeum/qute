@@ -14,7 +14,6 @@ import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Explorer (defSolver)
 import Language.QBE.Simulator.Symbolic.Expression qualified as SE
 import Language.QBE.Types qualified as QBE
-import SimpleBV qualified as SMT
 import System.Random (initStdGen)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -40,7 +39,6 @@ storeTests =
           let s5 = fst $ ST.getConcolic s4 "a" (QBE.Base QBE.Word)
           _ <- ST.finalize solver s5
 
-          _ <- SMT.stop solver
           assertBool "finalize does not throw an exception" True
     ]
 
@@ -97,8 +95,6 @@ traceTests =
               assertBool "condition must be /= 0" (v /= 0)
             _ -> assertFailure "unexpected model"
 
-          _ <- SMT.stop s
-
           -- There are only two branches: input == 0 and input /= 0
           (nxt, _) <- findUnexplored s inputs nextPathSel
           nxt @?= Nothing,
@@ -127,7 +123,6 @@ traceTests =
               \ret\n\
               \}"
 
-          _ <- SMT.stop s
           length t @?= 2
     ]
 

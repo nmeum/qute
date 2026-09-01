@@ -24,7 +24,6 @@ import Language.QBE.Simulator.Explorer
   )
 import Language.QBE.Types qualified as QBE
 import Options.Applicative qualified as OPT
-import SimpleBV qualified as SMT
 import System.Directory (createDirectoryIfMissing)
 import System.Exit (die)
 import System.FilePath (addExtension, (</>))
@@ -188,14 +187,12 @@ exploreFile opts@Opts {optBase = base} = do
   case optLog opts of
     Just fn -> withFile fn WriteMode (exploreWithHandle ktest env func)
     Nothing -> do
-      solver <- defSolver
-      let engine = newEngine env solver
-      exploreEntry opts ktest engine func <* SMT.stop solver
+      engine <- newEngine env <$> defSolver
+      exploreEntry opts ktest engine func
   where
     exploreWithHandle ktest env func handle = do
-      solver <- logSolver handle
-      let engine = newEngine env solver
-      exploreEntry opts ktest engine func <* SMT.stop solver
+      engine <- newEngine env <$> logSolver handle
+      exploreEntry opts ktest engine func
 
 ------------------------------------------------------------------------
 

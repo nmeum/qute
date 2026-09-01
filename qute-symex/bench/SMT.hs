@@ -11,7 +11,6 @@ import Language.QBE.Simulator.Concolic.State (mkEnv)
 import Language.QBE.Simulator.Explorer (PathResult, exploreFunc, logSolver, newEngine)
 import Language.QBE.Types qualified as QBE
 import SMTUnwind (unwind)
-import SimpleBV qualified as SMT
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath ((</>))
 import System.IO (IOMode (WriteMode), hClose, hPutStrLn, openFile, withFile)
@@ -40,10 +39,8 @@ exploreQBE filePath = do
   where
     exploreFunc' prog func handle = do
       defEnv <- mkEnv prog 0 128 (Just 0)
-      solver <- logSolver handle
-
-      let engine = newEngine defEnv solver
-      exploreFunc engine func [] <* SMT.stop solver
+      engine <- newEngine defEnv <$> logSolver handle
+      exploreFunc engine func []
 
 getQueries :: String -> IO String
 getQueries name = do
