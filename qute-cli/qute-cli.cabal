@@ -19,6 +19,7 @@ category:           Language
 build-type:         Simple
 homepage:           https://git.8pit.net/qute
 bug-reports:        https://github.com/nmeum/qute/issues
+extra-source-files: test/testdata/*.ktest
 
 source-repository head
     type: git
