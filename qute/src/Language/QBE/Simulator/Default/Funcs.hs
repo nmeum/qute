@@ -10,13 +10,21 @@ import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch))
 import Language.QBE.Simulator.Expression qualified as E
 import Language.QBE.Simulator.State (Simulator, readNullArray, toAddress)
 import Language.QBE.Types qualified as QBE
+import System.Exit (ExitCode (ExitFailure), exitWith)
 
+-- TODO: remove this
 puts :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
 puts _ [strPtr] = do
   bytes <- toAddress strPtr >>= readNullArray
   liftIO $ putStrLn (E.toString bytes)
   pure (Just $ E.fromLit (QBE.Base QBE.Word) 0)
 puts ident _ = throwError $ FuncArgsMismatch ident
+
+exit :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
+exit _ [status] =
+  let code = fromIntegral $ E.toWord64 status
+   in liftIO $ exitWith (ExitFailure code)
+exit ident _ = throwError $ FuncArgsMismatch ident
 
 ------------------------------------------------------------------------
 
@@ -26,4 +34,5 @@ lookupSimFunc ::
   QBE.GlobalIdent ->
   Maybe ([v] -> m (Maybe v))
 lookupSimFunc i@(QBE.GlobalIdent "puts") = Just (puts i)
+lookupSimFunc i@(QBE.GlobalIdent "qute_exit") = Just (exit i)
 lookupSimFunc _ = Nothing
