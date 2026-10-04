@@ -368,6 +368,7 @@ dynConst :: Parser Q.DynConst
 dynConst =
   (Q.Const <$> constant)
     <|> (Q.Thread <$> (key "thread" >> global))
+    <|> (Q.Common <$> (key "common" >> global))
     <|> (Q.Extern <$> try (key "extern" >> global))
     <|> (Q.ExternThread <$> (key "extern" >> key "thread" >> global))
     <?> "dynconst"

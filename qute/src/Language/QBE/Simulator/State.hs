@@ -244,6 +244,7 @@ lookupValue ty (QBE.VConst (QBE.Const (QBE.DFP v))) =
   subType ty (E.fromDouble v)
 lookupValue ty (QBE.VConst (QBE.Const (QBE.Global k))) = lookupGlobal ty k
 lookupValue ty (QBE.VConst (QBE.Thread k)) = lookupGlobal ty k
+lookupValue ty (QBE.VConst (QBE.Common k)) = lookupGlobal ty k
 lookupValue ty (QBE.VConst (QBE.Extern k)) = lookupGlobal ty k
 lookupValue ty (QBE.VConst (QBE.ExternThread k)) = lookupGlobal ty k
 lookupValue ty (QBE.VLocal k) = do

@@ -162,6 +162,7 @@ data Const
 data DynConst
   = Const Const
   | Thread GlobalIdent
+  | Common GlobalIdent
   | Extern GlobalIdent
   | ExternThread GlobalIdent
   deriving (Show, Eq)
