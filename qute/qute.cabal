@@ -71,6 +71,7 @@ library
       Language.QBE.Simulator.Default.Generator
 
     exposed-modules:
+      Data.Archive,
       Language.QBE.Analysis.CFG,
       Language.QBE.Analysis.CDG,
       Language.QBE.Analysis.Graph,
@@ -106,6 +107,7 @@ test-suite qute-test
     ghc-options:      -O0
 
     other-modules:
+      Archive,
       Analysis,
       Simulator,
       Expression,
