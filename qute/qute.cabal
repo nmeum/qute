@@ -71,6 +71,7 @@ library
       Language.QBE.Simulator.Default.Generator
 
     exposed-modules:
+      Data.Archive,
       Language.QBE.Analysis.CFG,
       Language.QBE.Analysis.CDG,
       Language.QBE.Analysis.Graph,
