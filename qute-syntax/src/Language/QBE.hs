@@ -7,6 +7,7 @@
 module Language.QBE
   ( Program,
     Definition (..),
+    localDefs,
     globalFuncs,
     Language.QBE.parse,
     ExecError (..),
@@ -18,7 +19,16 @@ import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Data.List (find)
 import Data.Maybe (mapMaybe)
 import Language.QBE.Parser (dataDef, fileDef, funcDef, skipInitComments, typeDef)
-import Language.QBE.Types (DataDef, FuncDef, GlobalIdent, TypeDef, fName)
+import Language.QBE.Types
+  ( DataDef,
+    FuncDef,
+    GlobalIdent,
+    Linkage (LExport),
+    TypeDef,
+    fLinkage,
+    fName,
+    linkage,
+  )
 import Text.ParserCombinators.Parsec
   ( ParseError,
     Parser,
@@ -74,6 +84,18 @@ globalFuncs = mapMaybe globalFuncs'
     globalFuncs' :: Definition -> Maybe FuncDef
     globalFuncs' (DefFunc f) = Just f
     globalFuncs' _ = Nothing
+
+-- | Returns all non-exported data and function definitions of a 'Program'.
+localDefs :: Program -> Program
+localDefs = filter go
+  where
+    go :: Definition -> Bool
+    go (DefData dd) = not $ isGlobal (linkage dd)
+    go (DefFunc fd) = not $ isGlobal (fLinkage fd)
+    go _ = False
+
+    isGlobal :: [Linkage] -> Bool
+    isGlobal = elem LExport
 
 ------------------------------------------------------------------------
 
