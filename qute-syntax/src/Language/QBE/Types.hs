@@ -99,6 +99,9 @@ instance Show GlobalIdent where
 
 ------------------------------------------------------------------------
 
+class Operation a where
+  mapOperands :: a -> (Value -> Value) -> a
+
 data BaseType
   = Word
   | Long
@@ -274,12 +277,27 @@ data FuncArg
   | ArgVar
   deriving (Show, Eq)
 
+instance Operation FuncArg where
+  mapOperands fa f =
+    case fa of
+      ArgReg a v -> ArgReg a (f v)
+      ArgEnv v -> ArgEnv (f v)
+      ArgVar -> ArgVar
+
 data JumpInstr
   = Jump BlockIdent
   | Jnz Value BlockIdent BlockIdent
   | Return (Maybe Value)
   | Halt
   deriving (Show, Eq)
+
+instance Operation JumpInstr where
+  mapOperands ji f =
+    case ji of
+      Jump ident -> Jump ident
+      Jnz v ifT ifF -> Jnz (f v) ifT ifF
+      Return mayVal -> Return (f <$> mayVal)
+      Halt -> Halt
 
 data LoadType
   = LSubWord SubWordType
@@ -380,6 +398,35 @@ data Instr
   | VAArg Value
   deriving (Show, Eq)
 
+instance Operation Instr where
+  mapOperands instr f =
+    case instr of
+      Add lhs rhs -> Add (f lhs) (f rhs)
+      Sub lhs rhs -> Sub (f lhs) (f rhs)
+      Div lhs rhs -> Div (f lhs) (f rhs)
+      Mul lhs rhs -> Mul (f lhs) (f rhs)
+      Neg val -> Neg (f val)
+      URem lhs rhs -> URem (f lhs) (f rhs)
+      Rem lhs rhs -> Rem (f lhs) (f rhs)
+      UDiv lhs rhs -> UDiv (f lhs) (f rhs)
+      Or lhs rhs -> Or (f lhs) (f rhs)
+      Xor lhs rhs -> Xor (f lhs) (f rhs)
+      And lhs rhs -> And (f lhs) (f rhs)
+      Sar lhs rhs -> Sar (f lhs) (f rhs)
+      Shr lhs rhs -> Shr (f lhs) (f rhs)
+      Shl lhs rhs -> Shl (f lhs) (f rhs)
+      Alloc siz val -> Alloc siz (f val)
+      Load ty val -> Load ty (f val)
+      CompareInt a c lhs rhs -> CompareInt a c (f lhs) (f rhs)
+      CompareFloat a c lhs rhs -> CompareFloat a c (f lhs) (f rhs)
+      Ext n val -> Ext n (f val)
+      FloatToInt a b val -> FloatToInt a b (f val)
+      IntToFloat a b val -> IntToFloat a b (f val)
+      TruncDouble val -> TruncDouble (f val)
+      Cast val -> Cast (f val)
+      Copy val -> Copy (f val)
+      VAArg val -> VAArg (f val)
+
 data VolatileInstr
   = Store ExtType Value Value
   | VAStart Value
@@ -387,11 +434,26 @@ data VolatileInstr
   | DBGLoc Word64 Word64 (Maybe Word64)
   deriving (Show, Eq)
 
+instance Operation VolatileInstr where
+  mapOperands vi f =
+    case vi of
+      Store ty lhs rhs -> Store ty (f lhs) (f rhs)
+      VAStart val -> VAStart (f val)
+      Blit lhs rhs w -> Blit (f lhs) (f rhs) w
+      dbg@(DBGLoc {}) -> dbg
+
 data Statement
   = Assign LocalIdent BaseType Instr
   | Call (Maybe (LocalIdent, Abity)) Value [FuncArg]
   | Volatile VolatileInstr
   deriving (Show, Eq)
+
+instance Operation Statement where
+  mapOperands s f =
+    case s of
+      Assign ident ty instr -> Assign ident ty (mapOperands instr f)
+      Call retTy func args -> Call retTy (f func) (map (`mapOperands` f) args)
+      Volatile vi -> Volatile (mapOperands vi f)
 
 data Phi
   = Phi
@@ -401,6 +463,9 @@ data Phi
   }
   deriving (Show, Eq)
 
+instance Operation Phi where
+  mapOperands p f = p {pLabels = Map.map f (pLabels p)}
+
 data Block
   = Block
   { label :: BlockIdent, -- TODO: Consider removing this (part of the Map)
@@ -409,3 +474,11 @@ data Block
     term :: JumpInstr
   }
   deriving (Show, Eq)
+
+instance Operation Block where
+  mapOperands b f =
+    b
+      { phi = map (`mapOperands` f) $ phi b,
+        stmt = map (`mapOperands` f) $ stmt b,
+        term = mapOperands (term b) f
+      }
