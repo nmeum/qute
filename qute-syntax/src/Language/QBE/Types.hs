@@ -26,7 +26,7 @@ module Language.QBE.Types
     DynConst (..),
     Value (..),
 
-    -- * Definitions
+    -- * Definition
     TypeDef (..),
     DataDef (..),
     Linkage (..),
@@ -63,6 +63,10 @@ module Language.QBE.Types
     Phi (..),
     AllocSize (..),
     getSize,
+
+    -- * Type Classes
+    Operation(..),
+    Definition(..)
   )
 where
 
@@ -98,6 +102,20 @@ instance Show GlobalIdent where
   show (GlobalIdent s) = '$' : s
 
 ------------------------------------------------------------------------
+
+class Definition a where
+  mapGlobals :: a -> (GlobalIdent -> GlobalIdent) -> a
+
+replaceGlobal :: (GlobalIdent -> GlobalIdent) -> Value -> Value
+replaceGlobal _ v@(VLocal _) = v
+replaceGlobal f (VConst dynConst) =
+  VConst $
+    case dynConst of
+      c@(Const _) -> c
+      Thread i -> Thread $ f i
+      Common i -> Common $ f i
+      Extern i -> Extern $ f i
+      ExternThread i -> ExternThread $ f i
 
 class Operation a where
   mapOperands :: a -> (Value -> Value) -> a
@@ -261,6 +279,12 @@ data FuncDef
     fBlock :: Map BlockIdent Block
   }
   deriving (Show, Eq)
+
+instance Definition FuncDef where
+  mapGlobals func f =
+    func { fName = f (fName func),
+           fBlock = Map.map (`mapOperands` (replaceGlobal f)) $ fBlock func
+         }
 
 fEntry :: FuncDef -> Block
 fEntry func = fromJust $ Map.lookup (fStart func) (fBlock func)
