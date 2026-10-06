@@ -19,16 +19,7 @@ import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Data.List (find)
 import Data.Maybe (mapMaybe)
 import Language.QBE.Parser (dataDef, fileDef, funcDef, skipInitComments, typeDef)
-import Language.QBE.Types
-  ( DataDef,
-    FuncDef,
-    GlobalIdent,
-    Linkage (LExport),
-    TypeDef,
-    fLinkage,
-    fName,
-    linkage,
-  )
+import Language.QBE.Types qualified as QBE
 import Text.ParserCombinators.Parsec
   ( ParseError,
     Parser,
@@ -46,11 +37,11 @@ import Text.ParserCombinators.Parsec
 -- See also: The corresponding section of the [QBE specification](https://c9x.me/compile/doc/il-v1.2.html#Definitions).
 data Definition
   = -- | Definition of data (e.g. a string).
-    DefData DataDef
+    DefData QBE.DataDef
   | -- | Definition of an aggregate data type.
-    DefType TypeDef
+    DefType QBE.TypeDef
   | -- | Definition of a function.
-    DefFunc FuncDef
+    DefFunc QBE.FuncDef
   | -- | Definition of a debug file.
     DefFile String
   deriving (Eq, Show)
@@ -78,27 +69,27 @@ parse =
     (skipInitComments *> many parseDef <* eof)
 
 -- | Utility function to obtain all functions defined in a QBE 'Program'.
-globalFuncs :: Program -> [FuncDef]
+globalFuncs :: Program -> [QBE.FuncDef]
 globalFuncs = mapMaybe globalFuncs'
   where
-    globalFuncs' :: Definition -> Maybe FuncDef
+    globalFuncs' :: Definition -> Maybe QBE.FuncDef
     globalFuncs' (DefFunc f) = Just f
     globalFuncs' _ = Nothing
 
 -- | Returns all non-exported data and function definitions of a 'Program'.
-localDefs :: Program -> [GlobalIdent]
+localDefs :: Program -> [QBE.GlobalIdent]
 localDefs = mapMaybe go
   where
-    isGlobal :: [Linkage] -> Bool
-    isGlobal = elem LExport
+    isGlobal :: [QBE.Linkage] -> Bool
+    isGlobal = elem QBE.LExport
 
-    go :: Definition -> Maybe GlobalIdent
+    go :: Definition -> Maybe QBE.GlobalIdent
     go (DefData dd)
-      | isGlobal (linkage dd) = Nothing
-      | otherwise = Just (name dd)
+      | isGlobal (QBE.linkage dd) = Nothing
+      | otherwise = Just (QBE.name dd)
     go (DefFunc fd)
-      | isGlobal (fLinkage fd) = Nothing
-      | otherwise = Just (fName fd)
+      | isGlobal (QBE.fLinkage fd) = Nothing
+      | otherwise = Just (QBE.fName fd)
     go _ = Nothing
 
 ------------------------------------------------------------------------
@@ -108,7 +99,7 @@ data ExecError
   = -- | The input is not a valid QBE program.
     ESyntaxError ParseError
   | -- | The given entry function is not defined in the QBE program.
-    EUnknownEntry GlobalIdent
+    EUnknownEntry QBE.GlobalIdent
   deriving (Show)
 
 instance Exception ExecError
@@ -119,16 +110,16 @@ instance Exception ExecError
 -- is thrown.
 parseAndFind ::
   (MonadThrow m) =>
-  GlobalIdent ->
+  QBE.GlobalIdent ->
   String ->
-  m (Program, FuncDef)
+  m (Program, QBE.FuncDef)
 parseAndFind entryIdent input = do
   prog <- case Language.QBE.parse "" input of -- TODO: file name
     Right rt -> pure rt
     Left err -> throwM $ ESyntaxError err
 
   let funcs = globalFuncs prog
-  func <- case find (\f -> fName f == entryIdent) funcs of
+  func <- case find (\f -> QBE.fName f == entryIdent) funcs of
     Just x -> pure x
     Nothing -> throwM $ EUnknownEntry entryIdent
 
