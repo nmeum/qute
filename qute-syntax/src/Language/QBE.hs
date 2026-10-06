@@ -86,16 +86,20 @@ globalFuncs = mapMaybe globalFuncs'
     globalFuncs' _ = Nothing
 
 -- | Returns all non-exported data and function definitions of a 'Program'.
-localDefs :: Program -> Program
-localDefs = filter go
+localDefs :: Program -> [GlobalIdent]
+localDefs = mapMaybe go
   where
-    go :: Definition -> Bool
-    go (DefData dd) = not $ isGlobal (linkage dd)
-    go (DefFunc fd) = not $ isGlobal (fLinkage fd)
-    go _ = False
-
     isGlobal :: [Linkage] -> Bool
     isGlobal = elem LExport
+
+    go :: Definition -> Maybe GlobalIdent
+    go (DefData dd)
+      | isGlobal (linkage dd) = Nothing
+      | otherwise = Just (name dd)
+    go (DefFunc fd)
+      | isGlobal (fLinkage fd) = Nothing
+      | otherwise = Just (fName fd)
+    go _ = Nothing
 
 ------------------------------------------------------------------------
 
