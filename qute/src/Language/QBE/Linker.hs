@@ -9,6 +9,14 @@ import Data.Map qualified as Map
 import Language.QBE (Definition (DefData, DefFunc), Program, localDefs)
 import Language.QBE.Types qualified as QBE
 
+data Env
+  = Env
+  { envGlobals :: Map QBE.GlobalIdent Int,
+    envTypes :: Map QBE.GlobalIdent Int
+  }
+
+------------------------------------------------------------------------
+
 renameIdent :: Map QBE.GlobalIdent Int -> QBE.GlobalIdent -> QBE.GlobalIdent
 renameIdent varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
   where
@@ -51,9 +59,9 @@ uniqProg knownLocals prog =
   let varOcc = cntLocals knownLocals prog
    in (varOcc, renameGlobals varOcc prog)
 
-link :: [Program] -> [Program]
+link :: [Program] -> Program
 link = snd . foldl go (Map.empty, [])
   where
     go (k, l) p =
       let (nk, np) = uniqProg k p
-       in (nk, np : l)
+       in (nk, l ++ np)
