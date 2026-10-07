@@ -114,7 +114,8 @@ test-suite qute-test
       Simulator,
       Expression,
       Memory,
-      State
+      State,
+      Util
 
     build-depends:
         base,

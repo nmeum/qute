@@ -61,7 +61,7 @@ linkerTests =
               funcVal = QBE.VConst (QBE.Const $ QBE.Global (QBE.GlobalIdent "error"))
               funcArg =
                 QBE.ArgReg
-                  (QBE.ABase BE.Long)
+                  (QBE.ABase QBE.Long)
                   (QBE.VConst (QBE.Const $ QBE.Global (QBE.GlobalIdent ".L116.1")))
           QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]]
     ]
