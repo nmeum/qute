@@ -1,0 +1,23 @@
+!<arch>
+1.qbe/          0           0     0     644     126       `
+function w $myhelper() {
+@body
+	ret 42
+}
+export
+function $myfunc1() {
+@body
+	call extern $callback(l extern $myhelper)
+	ret
+}
+2.qbe/          0           0     0     644     126       `
+function w $myhelper() {
+@body
+	ret 42
+}
+export
+function $myfunc2() {
+@body
+	call extern $callback(l extern $myhelper)
+	ret
+}

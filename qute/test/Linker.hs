@@ -12,6 +12,7 @@ import Language.QBE
     ExecError (EUnknownEntry),
     Program,
     globalFuncs,
+    localDefs,
     parse,
   )
 import Language.QBE.Linker (link)
@@ -19,6 +20,7 @@ import Language.QBE.Types qualified as QBE
 import System.FilePath ((</>))
 import Test.Tasty
 import Test.Tasty.HUnit
+import Util (parseArchive)
 
 parseFile :: FilePath -> IO Program
 parseFile fileName = do
@@ -63,5 +65,21 @@ linkerTests =
                 QBE.ArgReg
                   (QBE.ABase QBE.Long)
                   (QBE.VConst (QBE.Const $ QBE.Global (QBE.GlobalIdent ".L116.1")))
+          QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]],
+      testCase "Link files with helper function" $
+        do
+          progs <- parseArchive "linker/same-helper-function.ar"
+          let linked = link progs
+
+          localDefs linked
+            @?= [QBE.GlobalIdent "myhelper", QBE.GlobalIdent "myhelper.1"]
+
+          func <- findFunc linked "myfunc2"
+          let block = QBE.fEntry func
+              funcVal = QBE.VConst (QBE.Extern $ QBE.GlobalIdent "callback")
+              funcArg =
+                QBE.ArgReg
+                  (QBE.ABase QBE.Long)
+                  (QBE.VConst (QBE.Extern $ QBE.GlobalIdent "myhelper.1"))
           QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]]
     ]

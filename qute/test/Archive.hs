@@ -15,7 +15,7 @@ archiveTests =
     "Test the parser for the ar(5) format"
     [ testCase "single file" $
         do
-          objs <- readArchive "single-file.ar"
+          objs <- readArchive "archive/single-file.ar"
           objs
             @?= [ Object
                     { oName = "hello.txt/",
@@ -29,13 +29,13 @@ archiveTests =
                 ],
       testCase "single file with padding" $
         do
-          objs <- readArchive "single-file-with-padding.ar"
+          objs <- readArchive "archive/single-file-with-padding.ar"
           case objs of
             [obj] -> oData obj @?= "12\n" -- padding removed
             _ -> assertFailure "unexpected object amount",
       testCase "multiple files" $
         do
-          objs <- readArchive "two-files-first-with-padding.ar"
+          objs <- readArchive "archive/two-files-first-with-padding.ar"
           objs
             @?= [ Object
                     { oName = "world.txt/",
@@ -58,7 +58,7 @@ archiveTests =
                 ],
       testCase "file name with space" $
         do
-          objs <- readArchive "file-name-containing-space.ar"
+          objs <- readArchive "archive/file-name-containing-space.ar"
           case objs of
             -- See https://man.freebsd.org/cgi/man.cgi?query=ar&sektion=5
             [obj] -> do

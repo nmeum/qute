@@ -11,7 +11,7 @@ import System.FilePath ((</>))
 
 readArchive :: FilePath -> IO [Object]
 readArchive fileName = do
-  content <- readFile $ "test" </> "testdata" </> "archive" </> fileName
+  content <- readFile $ "test" </> "testdata" </> fileName
   case Data.Archive.parse fileName content of
     Right objs -> pure objs
     Left err -> throwIO err
