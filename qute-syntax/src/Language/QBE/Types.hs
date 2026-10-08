@@ -67,6 +67,7 @@ module Language.QBE.Types
     -- * Type Classes
     Operation (..),
     Definition (..),
+    UsesType (..),
   )
 where
 

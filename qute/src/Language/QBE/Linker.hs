@@ -8,7 +8,7 @@ import Control.Monad (foldM)
 import Control.Monad.State (State, evalState, get, gets, modify)
 import Data.Map (Map)
 import Data.Map qualified as Map
-import Language.QBE (Definition (DefData, DefFunc), Program, localDefs)
+import Language.QBE (Definition (DefData, DefFile, DefFunc, DefType), Program, localDefs, typeDefs)
 import Language.QBE.Types qualified as QBE
 
 data Env
@@ -31,35 +31,22 @@ renameIdent varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
       | otherwise = global
 
 -- TODO: Code duplication.
--- renameType :: Map QBE.UserIdent Int -> QBE.UserIdent -> QBE.UserIdent
--- renameType varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
---   where
---     incrGlobal :: QBE.UserIdent -> Int -> QBE.UserIdent
---     incrGlobal global@(QBE.UserIdent s) n
---       | n >= 1 = QBE.UserIdent $ s ++ "." ++ show n
---       | otherwise = global
---
--- adjustReturn :: QBE.FuncDef -> Map QBE.UserIdent Int -> QBE.FuncDef
--- adjustReturn func@(FuncDef { fAbity = Nothing }) _ = func
--- adjustReturn FuncDef { fAbity = Just (AUserDef userIdent) } typeOcc =
---   FuncDef { fAbity = Just (AUserDef $ renameType typeOcc userIdent }
---
--- adjustType :: QBE.TypeDef -> Map QBE.UserIdent Int -> QBE.TypeDef
--- adjustType ty@(TypeDef { QBE.aggType = aggType }) =
---   ty { QBE.aggType = addjustAgg aggType }
--- adjustAgg :: QBE.AggType -> Map QBE.UserIdent Int -> QBE.AggType
--- adjustAgg (AOpaque w) = AOpaque w
--- adjustAgg (AUnion fields) = _
--- adjustAgg (ARegular fields) = map (rename
+renameType :: Map QBE.UserIdent Int -> QBE.UserIdent -> QBE.UserIdent
+renameType varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
+  where
+    incrGlobal :: QBE.UserIdent -> Int -> QBE.UserIdent
+    incrGlobal global@(QBE.UserIdent s) n
+      | n >= 1 = QBE.UserIdent $ s ++ "." ++ show n
+      | otherwise = global
 
 renameDef :: Env -> Definition -> Definition
-renameDef Env {envGlobals = varOcc} (DefFunc funcDef) =
-  DefFunc $ QBE.mapGlobals funcDef (renameIdent varOcc)
+renameDef Env {envGlobals = varOcc, envTypes = tyOcc} (DefFunc funcDef) =
+  DefFunc $ QBE.mapGlobals (QBE.mapType funcDef (renameType tyOcc)) (renameIdent varOcc)
 renameDef Env {envGlobals = varOcc} (DefData dataDef) =
   DefData $ QBE.mapGlobals dataDef (renameIdent varOcc)
--- renameDef Env { envTypes = tyOcc } (DefType typeDef) =
---   DefType $ TypeDef { aggName = renameType tyOcc }
-renameDef _ def = def
+renameDef Env {envTypes = tyOcc} (DefType typeDef) =
+  DefType $ QBE.mapType typeDef (renameType tyOcc)
+renameDef _ def@(DefFile _) = def
 
 renameDefs :: Env -> Program -> Program
 renameDefs env = map (renameDef env)
@@ -80,9 +67,10 @@ count knownVars defs =
 
 uniqProg :: Program -> State Env Program
 uniqProg prog = do
-  Env {envGlobals = knownVars} <- get
+  Env {envGlobals = knownVars, envTypes = knownTypes} <- get
   let varOcc = count knownVars (localDefs prog)
-  modify (\e -> e {envGlobals = varOcc})
+      tyOcc = count knownTypes (typeDefs prog)
+  modify (\e -> e {envGlobals = varOcc, envTypes = tyOcc})
   renameProg prog
 
 linkProgs :: [Program] -> State Env Program
