@@ -8,6 +8,7 @@ module Language.QBE
   ( Program,
     Definition (..),
     localDefs,
+    typeDefs,
     globalFuncs,
     Language.QBE.parse,
     ExecError (..),
@@ -90,6 +91,14 @@ localDefs = mapMaybe go
     go (DefFunc fd)
       | isGlobal (QBE.fLinkage fd) = Nothing
       | otherwise = Just (QBE.fName fd)
+    go _ = Nothing
+
+-- | Returns all defined types of a 'Program'.
+typeDefs :: Program -> [QBE.UserIdent]
+typeDefs = mapMaybe go
+  where
+    go :: Definition -> Maybe QBE.UserIdent
+    go (DefType ty) = Just $ QBE.aggName ty
     go _ = Nothing
 
 ------------------------------------------------------------------------
