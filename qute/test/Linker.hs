@@ -14,6 +14,7 @@ import Language.QBE
     globalFuncs,
     localDefs,
     parse,
+    typeDefs,
   )
 import Language.QBE.Linker (link)
 import Language.QBE.Types qualified as QBE
@@ -81,5 +82,15 @@ linkerTests =
                 QBE.ArgReg
                   (QBE.ABase QBE.Long)
                   (QBE.VConst (QBE.Extern $ QBE.GlobalIdent "myhelper.1"))
-          QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]]
+          QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]],
+      testCase "Link files with conflicting type definition" $
+        do
+          progs <- parseArchive "linker/same-type-in-function-return.ar"
+          let linked = link progs
+
+          typeDefs linked
+            @?= [QBE.UserIdent "retTy", QBE.UserIdent "retTy.1"]
+
+          func <- findFunc linked "idivmax"
+          QBE.fAbity func @?= Just (QBE.AUserDef $ QBE.UserIdent "retTy.1")
     ]
