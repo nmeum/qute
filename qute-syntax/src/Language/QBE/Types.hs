@@ -67,6 +67,7 @@ module Language.QBE.Types
     -- * Type Classes
     Operation (..),
     Definition (..),
+    UsesType (..),
   )
 where
 
@@ -102,6 +103,9 @@ instance Show GlobalIdent where
   show (GlobalIdent s) = '$' : s
 
 ------------------------------------------------------------------------
+
+class UsesType a where
+  mapType :: a -> (UserIdent -> UserIdent) -> a
 
 class Definition a where
   mapGlobals :: a -> (GlobalIdent -> GlobalIdent) -> a
@@ -156,6 +160,10 @@ data Abity
   | ASubWordType SubWordType
   | AUserDef UserIdent
   deriving (Show, Eq)
+
+instance UsesType Abity where
+  mapType (AUserDef uid) f = AUserDef (f uid)
+  mapType abity _ = abity
 
 abityToBase :: Abity -> BaseType
 -- Calls with a sub-word return type define a temporary of base type
@@ -226,12 +234,23 @@ data TypeDef
   }
   deriving (Show, Eq)
 
+instance UsesType TypeDef where
+  mapType ty@(TypeDef {aggName = name, aggType = aTy}) f =
+    ty {aggName = f name, aggType = mapType aTy f}
+
 data SubType
   = SExtType ExtType
   | SUserDef UserIdent
   deriving (Show, Eq)
 
+instance UsesType SubType where
+  mapType (SUserDef uid) f = SUserDef $ f uid
+  mapType ty@(SExtType _) _ = ty
+
 type Field = (SubType, Maybe Word64)
+
+mapFieldType :: Field -> (UserIdent -> UserIdent) -> Field
+mapFieldType (sty, n) f = (mapType sty f, n)
 
 -- TODO: Type for tuple
 data AggType
@@ -239,6 +258,11 @@ data AggType
   | AUnion [[Field]]
   | AOpaque Word64
   deriving (Show, Eq)
+
+instance UsesType AggType where
+  mapType (ARegular fields) f = ARegular $ map (`mapFieldType` f) fields
+  mapType (AUnion fields) f = AUnion $ map (map (`mapFieldType` f)) fields
+  mapType (AOpaque w64) _ = AOpaque w64
 
 data DataDef
   = DataDef
@@ -304,6 +328,11 @@ data FuncDef
     fBlock :: Map BlockIdent Block
   }
   deriving (Show, Eq)
+
+instance UsesType FuncDef where
+  mapType func@(FuncDef {fAbity = Just abity}) f =
+    func {fAbity = Just $ mapType abity f}
+  mapType func _ = func
 
 instance Definition FuncDef where
   mapGlobals func f =
