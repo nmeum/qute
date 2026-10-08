@@ -4,6 +4,8 @@
 
 module Language.QBE.Linker where
 
+import Control.Monad (foldM)
+import Control.Monad.State (State, evalState, get, gets, modify)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Language.QBE (Definition (DefData, DefFunc), Program, localDefs)
@@ -12,8 +14,11 @@ import Language.QBE.Types qualified as QBE
 data Env
   = Env
   { envGlobals :: Map QBE.GlobalIdent Int,
-    envTypes :: Map QBE.GlobalIdent Int
+    envTypes :: Map QBE.UserIdent Int
   }
+
+mkEnv :: Env
+mkEnv = Env Map.empty Map.empty
 
 ------------------------------------------------------------------------
 
@@ -25,43 +30,63 @@ renameIdent varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
       | n >= 1 = QBE.GlobalIdent $ s ++ "." ++ show n
       | otherwise = global
 
-renameDef :: Map QBE.GlobalIdent Int -> Definition -> Definition
-renameDef varOcc (DefFunc funcDef) =
+-- TODO: Code duplication.
+-- renameType :: Map QBE.UserIdent Int -> QBE.UserIdent -> QBE.UserIdent
+-- renameType varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
+--   where
+--     incrGlobal :: QBE.UserIdent -> Int -> QBE.UserIdent
+--     incrGlobal global@(QBE.UserIdent s) n
+--       | n >= 1 = QBE.UserIdent $ s ++ "." ++ show n
+--       | otherwise = global
+--
+-- adjustReturn :: QBE.FuncDef -> Map QBE.UserIdent Int -> QBE.FuncDef
+-- adjustReturn func@(FuncDef { fAbity = Nothing }) _ = func
+-- adjustReturn FuncDef { fAbity = Just (AUserDef userIdent) } typeOcc =
+--   FuncDef { fAbity = Just (AUserDef $ renameType typeOcc userIdent }
+--
+-- adjustType :: QBE.TypeDef -> Map QBE.UserIdent Int -> QBE.TypeDef
+-- adjustType ty@(TypeDef { QBE.aggType = aggType }) =
+--   ty { QBE.aggType = addjustAgg aggType }
+-- adjustAgg :: QBE.AggType -> Map QBE.UserIdent Int -> QBE.AggType
+-- adjustAgg (AOpaque w) = AOpaque w
+-- adjustAgg (AUnion fields) = _
+-- adjustAgg (ARegular fields) = map (rename
+
+renameDef :: Env -> Definition -> Definition
+renameDef Env {envGlobals = varOcc} (DefFunc funcDef) =
   DefFunc $ QBE.mapGlobals funcDef (renameIdent varOcc)
-renameDef varOcc (DefData dataDef) =
+renameDef Env {envGlobals = varOcc} (DefData dataDef) =
   DefData $ QBE.mapGlobals dataDef (renameIdent varOcc)
+-- renameDef Env { envTypes = tyOcc } (DefType typeDef) =
+--   DefType $ TypeDef { aggName = renameType tyOcc }
 renameDef _ def = def
 
-renameGlobals :: Map QBE.GlobalIdent Int -> Program -> Program
-renameGlobals varOcc = map (renameDef varOcc)
+renameDefs :: Env -> Program -> Program
+renameDefs env = map (renameDef env)
+
+renameProg :: Program -> State Env Program
+renameProg prog = gets (`renameDefs` prog)
 
 ------------------------------------------------------------------------
 
-cntLocals ::
-  Map QBE.GlobalIdent Int ->
-  Program ->
-  Map QBE.GlobalIdent Int
-cntLocals knownLocals prog =
-  let locals = localDefs prog
-   in foldl (flip $ upsert inc) knownLocals locals
+count :: (Ord a) => Map a Int -> [a] -> Map a Int
+count knownVars defs =
+  let inc = maybe 0 (+ 1)
+   in foldl (flip $ upsert inc) knownVars defs
   where
-    inc = maybe 0 (+ 1)
-
     -- TODO: Remove this once we upgrade to containers >= 0.8.1.
     -- See: <https://github.com/haskell/containers/issues/809>.
     upsert f = Map.alter (Just . f)
 
-uniqProg ::
-  Map QBE.GlobalIdent Int ->
-  Program ->
-  (Map QBE.GlobalIdent Int, Program)
-uniqProg knownLocals prog =
-  let varOcc = cntLocals knownLocals prog
-   in (varOcc, renameGlobals varOcc prog)
+uniqProg :: Program -> State Env Program
+uniqProg prog = do
+  Env {envGlobals = knownVars} <- get
+  let varOcc = count knownVars (localDefs prog)
+  modify (\e -> e {envGlobals = varOcc})
+  renameProg prog
+
+linkProgs :: [Program] -> State Env Program
+linkProgs = foldM (\acc x -> (acc ++) <$> uniqProg x) []
 
 link :: [Program] -> Program
-link = snd . foldl go (Map.empty, [])
-  where
-    go (k, l) p =
-      let (nk, np) = uniqProg k p
-       in (nk, l ++ np)
+link progs = evalState (linkProgs progs) mkEnv
