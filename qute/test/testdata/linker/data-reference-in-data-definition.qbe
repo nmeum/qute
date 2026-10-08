@@ -1,0 +1,6 @@
+data $somedata = align 1 {
+	b	0,
+}
+data $moredata = align 8 {
+	l	$somedata,
+}

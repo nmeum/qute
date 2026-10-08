@@ -93,6 +93,18 @@ linkerTests =
                   (QBE.ABase QBE.Long)
                   (QBE.VConst (QBE.Extern $ QBE.GlobalIdent "myhelper.1"))
           QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]],
+      testCase "Data reference within a data definition" $
+        do
+          prog <- parseFile "data-reference-in-data-definition.qbe"
+          let linked = link [prog, prog]
+
+          -- TODO: actually check the data mamber
+          localDefs linked
+            @?= [ QBE.GlobalIdent "somedata",
+                  QBE.GlobalIdent "moredata",
+                  QBE.GlobalIdent "somedata.1",
+                  QBE.GlobalIdent "moredata.1"
+                ],
       testCase "Link files with conflicting type definition" $
         do
           progs <- parseArchive "linker/same-type-in-function-return.ar"
