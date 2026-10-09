@@ -66,6 +66,7 @@ module Language.QBE.Types
 
     -- * Type Classes
     Operation (..),
+    Definition (..),
   )
 where
 
@@ -101,6 +102,14 @@ instance Show GlobalIdent where
   show (GlobalIdent s) = '$' : s
 
 ------------------------------------------------------------------------
+
+class Definition a where
+  mapGlobals :: a -> (GlobalIdent -> GlobalIdent) -> a
+
+replaceGlobal :: (GlobalIdent -> GlobalIdent) -> Value -> Value
+replaceGlobal _ v@(VLocal _) = v
+replaceGlobal f (VConst dynConst) =
+  VConst $ mapGlobals dynConst f
 
 class Operation a where
   mapOperands :: a -> (Value -> Value) -> a
@@ -165,6 +174,12 @@ data Const
   | Global GlobalIdent
   deriving (Show, Eq)
 
+instance Definition Const where
+  mapGlobals (Global i) f = Global (f i)
+  mapGlobals c@(DFP _) _ = c
+  mapGlobals c@(SFP _) _ = c
+  mapGlobals c@(Number _) _ = c
+
 data DynConst
   = Const Const
   | Thread GlobalIdent
@@ -172,6 +187,13 @@ data DynConst
   | Extern GlobalIdent
   | ExternThread GlobalIdent
   deriving (Show, Eq)
+
+instance Definition DynConst where
+  mapGlobals (Const c) f = Const $ mapGlobals c f
+  mapGlobals (Thread i) f = Thread (f i)
+  mapGlobals (Common i) f = Common (f i)
+  mapGlobals (Extern i) f = Extern (f i)
+  mapGlobals (ExternThread i) f = ExternThread (f i)
 
 data Value
   = VConst DynConst
@@ -227,6 +249,13 @@ data DataDef
   }
   deriving (Show, Eq)
 
+instance Definition DataDef where
+  mapGlobals def f =
+    def
+      { name = f $ name def,
+        objs = map (`mapGlobals` f) $ objs def
+      }
+
 dataSize :: DataDef -> Int
 dataSize dataDef =
   sum $ map objSize (objs dataDef)
@@ -235,6 +264,11 @@ data DataObj
   = OItem ExtType [DataItem]
   | OZeroFill Word64
   deriving (Show, Eq)
+
+instance Definition DataObj where
+  mapGlobals o@(OZeroFill _) _ = o
+  mapGlobals (OItem ty items) f =
+    OItem ty $ map (`mapGlobals` f) items
 
 objAlign :: DataObj -> Word64
 objAlign (OZeroFill _) = 1 :: Word64
@@ -255,6 +289,11 @@ data DataItem
   | DConst Const
   deriving (Show, Eq)
 
+instance Definition DataItem where
+  mapGlobals (DSymOff ident off) f = DSymOff (f ident) off
+  mapGlobals (DConst c) f = DConst $ mapGlobals c f
+  mapGlobals s@(DString _) _ = s
+
 data FuncDef
   = FuncDef
   { fLinkage :: [Linkage],
@@ -265,6 +304,13 @@ data FuncDef
     fBlock :: Map BlockIdent Block
   }
   deriving (Show, Eq)
+
+instance Definition FuncDef where
+  mapGlobals func f =
+    func
+      { fName = f (fName func),
+        fBlock = Map.map (`mapOperands` replaceGlobal f) $ fBlock func
+      }
 
 fEntry :: FuncDef -> Block
 fEntry func = fromJust $ Map.lookup (fStart func) (fBlock func)
