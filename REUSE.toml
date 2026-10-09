@@ -26,6 +26,12 @@ path = "qute/test/testdata/archive/*"
 SPDX-FileCopyrightText = "2026 Sören Tempel <soeren+git@soeren-tempel.net>"
 SPDX-License-Identifier = "Unlicense"
 
+# Machine-generated files as obtained by scc or cproc.
+[[annotations]]
+path = "qute/test/testdata/linker/*"
+SPDX-FileCopyrightText = "2026 Sören Tempel <soeren+git@soeren-tempel.net>"
+SPDX-License-Identifier = "Unlicense"
+
 # Machine-generated files as obtained by `cproc -emit-qbe`.
 [[annotations]]
 path = "qute/**/*.qbe"

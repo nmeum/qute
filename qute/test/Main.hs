@@ -7,6 +7,7 @@ module Main (main) where
 import Analysis
 import Archive
 import Expression
+import Linker
 import Memory
 import Simulator
 import State
@@ -20,6 +21,7 @@ tests =
   testGroup
     "Tests"
     [ archiveTests,
+      linkerTests,
       simTests,
       memTests,
       analTests,

@@ -1,0 +1,11 @@
+data $.L116 = align 1 {
+	b	"%s:%ld: assertion failed '%s'",
+	b	10,
+	b	0,
+}
+export function $__assert()
+{
+@body
+	call $error(l $.L116)
+	ret
+}

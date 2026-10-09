@@ -4,20 +4,10 @@
 
 module Archive (archiveTests) where
 
-import Control.Exception (throwIO)
-import Data.Archive (Object (..), parse)
-import System.FilePath ((</>))
+import Data.Archive (Object (..))
 import Test.Tasty
 import Test.Tasty.HUnit
-
-parseFile :: FilePath -> IO [Object]
-parseFile fileName = do
-  content <- readFile $ "test" </> "testdata" </> "archive" </> fileName
-  case parse fileName content of
-    Right objs -> pure objs
-    Left err -> throwIO err
-
-------------------------------------------------------------------------
+import Util (readArchive)
 
 archiveTests :: TestTree
 archiveTests =
@@ -25,7 +15,7 @@ archiveTests =
     "Test the parser for the ar(5) format"
     [ testCase "single file" $
         do
-          objs <- parseFile "single-file.ar"
+          objs <- readArchive "archive/single-file.ar"
           objs
             @?= [ Object
                     { oName = "hello.txt/",
@@ -39,13 +29,13 @@ archiveTests =
                 ],
       testCase "single file with padding" $
         do
-          objs <- parseFile "single-file-with-padding.ar"
+          objs <- readArchive "archive/single-file-with-padding.ar"
           case objs of
             [obj] -> oData obj @?= "12\n" -- padding removed
             _ -> assertFailure "unexpected object amount",
       testCase "multiple files" $
         do
-          objs <- parseFile "two-files-first-with-padding.ar"
+          objs <- readArchive "archive/two-files-first-with-padding.ar"
           objs
             @?= [ Object
                     { oName = "world.txt/",
@@ -68,7 +58,7 @@ archiveTests =
                 ],
       testCase "file name with space" $
         do
-          objs <- parseFile "file-name-containing-space.ar"
+          objs <- readArchive "archive/file-name-containing-space.ar"
           case objs of
             -- See https://man.freebsd.org/cgi/man.cgi?query=ar&sektion=5
             [obj] -> do
