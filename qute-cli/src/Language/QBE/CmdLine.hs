@@ -23,6 +23,8 @@ data BasicArgs = BasicArgs
     optMemStart :: MEM.Address,
     -- | Size of the memory in bytes.
     optMemSize :: MEM.Size,
+    -- | Path to an .ar archive to preload.
+    optQBEArchive :: Maybe FilePath,
     -- | Path to the QBE input file.
     optQBEFile :: FilePath
   }
@@ -43,6 +45,14 @@ basicArgs =
           <> OPT.short 's'
           <> OPT.value (1024 * 1024) -- 1 MB RAM
           <> OPT.help "Size of the memory region"
+      )
+    <*> OPT.optional
+      ( OPT.strOption
+          ( OPT.long "preload"
+              <> OPT.short 'p'
+              <> OPT.metavar "FILE"
+              <> OPT.help "Preload the given .ar archive consisting of QBE files"
+          )
       )
     <*> OPT.argument OPT.str (OPT.metavar "FILE")
 

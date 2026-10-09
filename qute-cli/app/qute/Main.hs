@@ -4,8 +4,10 @@
 
 module Main (main) where
 
+import Data.Archive (qbeArchive)
 import Data.Word (Word64, Word8)
 import Language.QBE.CmdLine qualified as CMD
+import Language.QBE.Linker (link)
 import Language.QBE.Simulator (execFunc)
 import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Default.State (Env, mkEnv, run)
@@ -22,8 +24,12 @@ fromWord v
 execFile :: CMD.BasicArgs -> IO Int
 execFile opts = do
   (prog, func) <- CMD.parseEntryFile $ CMD.optQBEFile opts
+  linked <-
+    case CMD.optQBEArchive opts of
+      Nothing -> pure prog
+      Just ar -> (\xs -> link $ prog : xs) <$> qbeArchive ar
 
-  env <- mkEnv prog (CMD.optMemStart opts) (CMD.optMemSize opts)
+  env <- mkEnv linked (CMD.optMemStart opts) (CMD.optMemSize opts)
   res <- run (env :: Env DE.RegVal Word8) (execFunc func [])
   case res >>= fromWord of
     Just x -> pure $ fromIntegral x
