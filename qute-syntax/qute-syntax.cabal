@@ -32,11 +32,12 @@ library
 
     other-modules:
       Language.QBE.Util,
-      Language.QBE.Numbers
+      Language.QBE.Numbers,
 
     exposed-modules:
       Language.QBE,
       Language.QBE.Types,
+      Language.QBE.Uses,
       Language.QBE.Parser
 
     build-depends:

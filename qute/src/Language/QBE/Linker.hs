@@ -10,6 +10,7 @@ import Data.Map (Map)
 import Data.Map qualified as Map
 import Language.QBE (Definition (DefData, DefFile, DefFunc, DefType), Program, localDefs, typeDefs)
 import Language.QBE.Types qualified as QBE
+import Language.QBE.Uses qualified as USE
 
 data Env
   = Env
@@ -40,11 +41,11 @@ renameType varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
 
 renameDef :: Env -> Definition -> Definition
 renameDef Env {envGlobals = varOcc, envTypes = tyOcc} (DefFunc funcDef) =
-  DefFunc $ QBE.mapGlobals (QBE.mapType funcDef (renameType tyOcc)) (renameIdent varOcc)
+  DefFunc $ USE.mapGlobals (USE.mapType funcDef (renameType tyOcc)) (renameIdent varOcc)
 renameDef Env {envGlobals = varOcc} (DefData dataDef) =
-  DefData $ QBE.mapGlobals dataDef (renameIdent varOcc)
+  DefData $ USE.mapGlobals dataDef (renameIdent varOcc)
 renameDef Env {envTypes = tyOcc} (DefType typeDef) =
-  DefType $ QBE.mapType typeDef (renameType tyOcc)
+  DefType $ USE.mapType typeDef (renameType tyOcc)
 renameDef _ def@(DefFile _) = def
 
 renameDefs :: Env -> Program -> Program

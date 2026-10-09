@@ -63,11 +63,6 @@ module Language.QBE.Types
     Phi (..),
     AllocSize (..),
     getSize,
-
-    -- * Type Classes
-    Operation (..),
-    Definition (..),
-    UsesType (..),
   )
 where
 
@@ -103,20 +98,6 @@ instance Show GlobalIdent where
   show (GlobalIdent s) = '$' : s
 
 ------------------------------------------------------------------------
-
-class UsesType a where
-  mapType :: a -> (UserIdent -> UserIdent) -> a
-
-class Definition a where
-  mapGlobals :: a -> (GlobalIdent -> GlobalIdent) -> a
-
-replaceGlobal :: (GlobalIdent -> GlobalIdent) -> Value -> Value
-replaceGlobal _ v@(VLocal _) = v
-replaceGlobal f (VConst dynConst) =
-  VConst $ mapGlobals dynConst f
-
-class Operation a where
-  mapOperands :: a -> (Value -> Value) -> a
 
 data BaseType
   = Word
@@ -161,10 +142,6 @@ data Abity
   | AUserDef UserIdent
   deriving (Show, Eq)
 
-instance UsesType Abity where
-  mapType (AUserDef uid) f = AUserDef (f uid)
-  mapType abity _ = abity
-
 abityToBase :: Abity -> BaseType
 -- Calls with a sub-word return type define a temporary of base type
 -- w with its most significant bits unspecified.
@@ -182,12 +159,6 @@ data Const
   | Global GlobalIdent
   deriving (Show, Eq)
 
-instance Definition Const where
-  mapGlobals (Global i) f = Global (f i)
-  mapGlobals c@(DFP _) _ = c
-  mapGlobals c@(SFP _) _ = c
-  mapGlobals c@(Number _) _ = c
-
 data DynConst
   = Const Const
   | Thread GlobalIdent
@@ -195,13 +166,6 @@ data DynConst
   | Extern GlobalIdent
   | ExternThread GlobalIdent
   deriving (Show, Eq)
-
-instance Definition DynConst where
-  mapGlobals (Const c) f = Const $ mapGlobals c f
-  mapGlobals (Thread i) f = Thread (f i)
-  mapGlobals (Common i) f = Common (f i)
-  mapGlobals (Extern i) f = Extern (f i)
-  mapGlobals (ExternThread i) f = ExternThread (f i)
 
 data Value
   = VConst DynConst
@@ -234,23 +198,12 @@ data TypeDef
   }
   deriving (Show, Eq)
 
-instance UsesType TypeDef where
-  mapType ty@(TypeDef {aggName = name, aggType = aTy}) f =
-    ty {aggName = f name, aggType = mapType aTy f}
-
 data SubType
   = SExtType ExtType
   | SUserDef UserIdent
   deriving (Show, Eq)
 
-instance UsesType SubType where
-  mapType (SUserDef uid) f = SUserDef $ f uid
-  mapType ty@(SExtType _) _ = ty
-
 type Field = (SubType, Maybe Word64)
-
-mapFieldType :: Field -> (UserIdent -> UserIdent) -> Field
-mapFieldType (sty, n) f = (mapType sty f, n)
 
 -- TODO: Type for tuple
 data AggType
@@ -258,11 +211,6 @@ data AggType
   | AUnion [[Field]]
   | AOpaque Word64
   deriving (Show, Eq)
-
-instance UsesType AggType where
-  mapType (ARegular fields) f = ARegular $ map (`mapFieldType` f) fields
-  mapType (AUnion fields) f = AUnion $ map (map (`mapFieldType` f)) fields
-  mapType (AOpaque w64) _ = AOpaque w64
 
 data DataDef
   = DataDef
@@ -273,13 +221,6 @@ data DataDef
   }
   deriving (Show, Eq)
 
-instance Definition DataDef where
-  mapGlobals def f =
-    def
-      { name = f $ name def,
-        objs = map (`mapGlobals` f) $ objs def
-      }
-
 dataSize :: DataDef -> Int
 dataSize dataDef =
   sum $ map objSize (objs dataDef)
@@ -288,11 +229,6 @@ data DataObj
   = OItem ExtType [DataItem]
   | OZeroFill Word64
   deriving (Show, Eq)
-
-instance Definition DataObj where
-  mapGlobals o@(OZeroFill _) _ = o
-  mapGlobals (OItem ty items) f =
-    OItem ty $ map (`mapGlobals` f) items
 
 objAlign :: DataObj -> Word64
 objAlign (OZeroFill _) = 1 :: Word64
@@ -313,11 +249,6 @@ data DataItem
   | DConst Const
   deriving (Show, Eq)
 
-instance Definition DataItem where
-  mapGlobals (DSymOff ident off) f = DSymOff (f ident) off
-  mapGlobals (DConst c) f = DConst $ mapGlobals c f
-  mapGlobals s@(DString _) _ = s
-
 data FuncDef
   = FuncDef
   { fLinkage :: [Linkage],
@@ -328,18 +259,6 @@ data FuncDef
     fBlock :: Map BlockIdent Block
   }
   deriving (Show, Eq)
-
-instance UsesType FuncDef where
-  mapType func@(FuncDef {fAbity = Just abity}) f =
-    func {fAbity = Just $ mapType abity f}
-  mapType func _ = func
-
-instance Definition FuncDef where
-  mapGlobals func f =
-    func
-      { fName = f (fName func),
-        fBlock = Map.map (`mapOperands` replaceGlobal f) $ fBlock func
-      }
 
 fEntry :: FuncDef -> Block
 fEntry func = fromJust $ Map.lookup (fStart func) (fBlock func)
@@ -356,27 +275,12 @@ data FuncArg
   | ArgVar
   deriving (Show, Eq)
 
-instance Operation FuncArg where
-  mapOperands fa f =
-    case fa of
-      ArgReg a v -> ArgReg a (f v)
-      ArgEnv v -> ArgEnv (f v)
-      ArgVar -> ArgVar
-
 data JumpInstr
   = Jump BlockIdent
   | Jnz Value BlockIdent BlockIdent
   | Return (Maybe Value)
   | Halt
   deriving (Show, Eq)
-
-instance Operation JumpInstr where
-  mapOperands ji f =
-    case ji of
-      Jump ident -> Jump ident
-      Jnz v ifT ifF -> Jnz (f v) ifT ifF
-      Return mayVal -> Return (f <$> mayVal)
-      Halt -> Halt
 
 data LoadType
   = LSubWord SubWordType
@@ -477,35 +381,6 @@ data Instr
   | VAArg Value
   deriving (Show, Eq)
 
-instance Operation Instr where
-  mapOperands instr f =
-    case instr of
-      Add lhs rhs -> Add (f lhs) (f rhs)
-      Sub lhs rhs -> Sub (f lhs) (f rhs)
-      Div lhs rhs -> Div (f lhs) (f rhs)
-      Mul lhs rhs -> Mul (f lhs) (f rhs)
-      Neg val -> Neg (f val)
-      URem lhs rhs -> URem (f lhs) (f rhs)
-      Rem lhs rhs -> Rem (f lhs) (f rhs)
-      UDiv lhs rhs -> UDiv (f lhs) (f rhs)
-      Or lhs rhs -> Or (f lhs) (f rhs)
-      Xor lhs rhs -> Xor (f lhs) (f rhs)
-      And lhs rhs -> And (f lhs) (f rhs)
-      Sar lhs rhs -> Sar (f lhs) (f rhs)
-      Shr lhs rhs -> Shr (f lhs) (f rhs)
-      Shl lhs rhs -> Shl (f lhs) (f rhs)
-      Alloc siz val -> Alloc siz (f val)
-      Load ty val -> Load ty (f val)
-      CompareInt a c lhs rhs -> CompareInt a c (f lhs) (f rhs)
-      CompareFloat a c lhs rhs -> CompareFloat a c (f lhs) (f rhs)
-      Ext n val -> Ext n (f val)
-      FloatToInt a b val -> FloatToInt a b (f val)
-      IntToFloat a b val -> IntToFloat a b (f val)
-      TruncDouble val -> TruncDouble (f val)
-      Cast val -> Cast (f val)
-      Copy val -> Copy (f val)
-      VAArg val -> VAArg (f val)
-
 data VolatileInstr
   = Store ExtType Value Value
   | VAStart Value
@@ -513,26 +388,11 @@ data VolatileInstr
   | DBGLoc Word64 Word64 (Maybe Word64)
   deriving (Show, Eq)
 
-instance Operation VolatileInstr where
-  mapOperands vi f =
-    case vi of
-      Store ty lhs rhs -> Store ty (f lhs) (f rhs)
-      VAStart val -> VAStart (f val)
-      Blit lhs rhs w -> Blit (f lhs) (f rhs) w
-      dbg@(DBGLoc {}) -> dbg
-
 data Statement
   = Assign LocalIdent BaseType Instr
   | Call (Maybe (LocalIdent, Abity)) Value [FuncArg]
   | Volatile VolatileInstr
   deriving (Show, Eq)
-
-instance Operation Statement where
-  mapOperands s f =
-    case s of
-      Assign ident ty instr -> Assign ident ty (mapOperands instr f)
-      Call retTy func args -> Call retTy (f func) (map (`mapOperands` f) args)
-      Volatile vi -> Volatile (mapOperands vi f)
 
 data Phi
   = Phi
@@ -542,9 +402,6 @@ data Phi
   }
   deriving (Show, Eq)
 
-instance Operation Phi where
-  mapOperands p f = p {pLabels = Map.map f (pLabels p)}
-
 data Block
   = Block
   { label :: BlockIdent, -- TODO: Consider removing this (part of the Map)
@@ -553,11 +410,3 @@ data Block
     term :: JumpInstr
   }
   deriving (Show, Eq)
-
-instance Operation Block where
-  mapOperands b f =
-    b
-      { phi = map (`mapOperands` f) $ phi b,
-        stmt = map (`mapOperands` f) $ stmt b,
-        term = mapOperands (term b) f
-      }
