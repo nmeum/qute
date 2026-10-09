@@ -26,27 +26,23 @@ mkEnv = Env Map.empty Map.empty
 
 ------------------------------------------------------------------------
 
-renameIdent :: Map QBE.GlobalIdent Int -> QBE.GlobalIdent -> QBE.GlobalIdent
-renameIdent varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
+-- TODO: Some sort of type class for Idents?
+rename :: (Ord a) => (a -> Int -> a) -> Map a Int -> a -> a
+rename inc varOcc i = maybe i (inc' i) $ Map.lookup i varOcc
   where
-    incrGlobal :: QBE.GlobalIdent -> Int -> QBE.GlobalIdent
-    incrGlobal global@(QBE.GlobalIdent s) n
-      | n >= 1 = QBE.GlobalIdent $ s ++ "." ++ show n
-      | otherwise = global
+    inc' ident n = if n >= 1 then inc ident n else ident
+
+renameGlobal :: Map QBE.GlobalIdent Int -> QBE.GlobalIdent -> QBE.GlobalIdent
+renameGlobal = rename (\(QBE.GlobalIdent s) n -> QBE.GlobalIdent $ s ++ ".QG" ++ show n)
 
 renameType :: Map QBE.UserIdent Int -> QBE.UserIdent -> QBE.UserIdent
-renameType varOcc i = maybe i (incrGlobal i) $ Map.lookup i varOcc
-  where
-    incrGlobal :: QBE.UserIdent -> Int -> QBE.UserIdent
-    incrGlobal global@(QBE.UserIdent s) n
-      | n >= 1 = QBE.UserIdent $ s ++ "." ++ show n
-      | otherwise = global
+renameType = rename (\(QBE.UserIdent s) n -> QBE.UserIdent $ s ++ ".QU" ++ show n)
 
 renameDef :: Env -> Definition -> Definition
 renameDef Env {envGlobals = varOcc, envTypes = tyOcc} (DefFunc funcDef) =
-  DefFunc $ USE.mapGlobals (USE.mapType funcDef (renameType tyOcc)) (renameIdent varOcc)
+  DefFunc $ USE.mapGlobals (USE.mapType funcDef (renameType tyOcc)) (renameGlobal varOcc)
 renameDef Env {envGlobals = varOcc} (DefData dataDef) =
-  DefData $ USE.mapGlobals dataDef (renameIdent varOcc)
+  DefData $ USE.mapGlobals dataDef (renameGlobal varOcc)
 renameDef Env {envTypes = tyOcc} (DefType typeDef) =
   DefType $ USE.mapType typeDef (renameType tyOcc)
 renameDef _ def@(DefFile _) = def
