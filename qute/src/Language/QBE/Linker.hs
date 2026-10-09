@@ -2,7 +2,10 @@
 --
 -- SPDX-License-Identifier: GPL-3.0-only
 
-module Language.QBE.Linker where
+-- | This module implements a "linker" for QBE source files. It takes multiple
+-- 'Language.QBE.Program' values and merges them by resolving conflicting
+-- non-exporting definitions by assising them a new (unique) name.
+module Language.QBE.Linker (link) where
 
 import Control.Monad (foldM)
 import Control.Monad.State (State, evalState, get, gets, modify)
@@ -73,8 +76,8 @@ uniqProg prog = do
   modify (\e -> e {envGlobals = varOcc, envTypes = tyOcc})
   renameProg prog
 
-linkProgs :: [Program] -> State Env Program
-linkProgs = foldM (\acc x -> (acc ++) <$> uniqProg x) []
-
+-- | Merge multiple QBE sources files into one, renaming non-exported definitions.
 link :: [Program] -> Program
-link progs = evalState (linkProgs progs) mkEnv
+link progs = evalState (foldM go [] progs) mkEnv
+  where
+    go acc x = (acc ++) <$> uniqProg x
