@@ -6,12 +6,13 @@
 module Language.QBE.CmdLine
   ( BasicArgs (..),
     basicArgs,
-    entryFunc,
-    parseEntryFile,
+    loadProg,
   )
 where
 
+import Data.Archive (qbeArchive)
 import Language.QBE (Program, parseAndFind)
+import Language.QBE.Linker (link)
 import Language.QBE.Simulator.Memory qualified as MEM
 import Language.QBE.Types qualified as QBE
 import Options.Applicative qualified as OPT
@@ -23,6 +24,8 @@ data BasicArgs = BasicArgs
     optMemStart :: MEM.Address,
     -- | Size of the memory in bytes.
     optMemSize :: MEM.Size,
+    -- | Path to an .ar archive to preload.
+    optQBEArchive :: Maybe FilePath,
     -- | Path to the QBE input file.
     optQBEFile :: FilePath
   }
@@ -44,6 +47,14 @@ basicArgs =
           <> OPT.value (1024 * 1024) -- 1 MB RAM
           <> OPT.help "Size of the memory region"
       )
+    <*> OPT.optional
+      ( OPT.strOption
+          ( OPT.long "preload"
+              <> OPT.short 'p'
+              <> OPT.metavar "FILE"
+              <> OPT.help "Preload the given .ar archive consisting of QBE files"
+          )
+      )
     <*> OPT.argument OPT.str (OPT.metavar "FILE")
 
 ------------------------------------------------------------------------
@@ -56,3 +67,14 @@ entryFunc = QBE.GlobalIdent "main"
 parseEntryFile :: FilePath -> IO (Program, QBE.FuncDef)
 parseEntryFile filePath =
   readFile filePath >>= parseAndFind entryFunc
+
+-- | Load the program specified in 'BasicArgs'. Returns the
+-- loaded 'Program' and the entry function.
+loadProg :: BasicArgs -> IO (Program, QBE.FuncDef)
+loadProg opts = do
+  (prog, func) <- parseEntryFile $ optQBEFile opts
+  linked <-
+    case optQBEArchive opts of
+      Nothing -> pure prog
+      Just ar -> (\xs -> link $ prog : xs) <$> qbeArchive ar
+  pure (linked, func)

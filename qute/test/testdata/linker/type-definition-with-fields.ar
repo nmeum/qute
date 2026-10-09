@@ -1,0 +1,3 @@
+type :type.39 = align 8 { l 3 }
+type :type.38 = align 8 { l 1, :type.39 1 }
+type :something = { { :type.38 1 } }

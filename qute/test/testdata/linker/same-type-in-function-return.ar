@@ -1,0 +1,23 @@
+!<arch>
+1.qbe/          0           0     0     644     212       `
+type :retTy = align 8 { 16 }
+export function :retTy $imaxdiv(l %num.L46.val,l %den.L47.val)
+{
+@start
+	%num.L46 =l alloc8 8
+	%den.L47 =l alloc8 8
+	storel %num.L46.val,%num.L46
+	storel %den.L47.val,%den.L47
+	ret
+}
+2.qbe/          0           0     0     644     212       `
+type :retTy = align 8 { 16 }
+export function :retTy $idivmax(l %num.L46.val,l %den.L47.val)
+{
+@start
+	%num.L46 =l alloc8 8
+	%den.L47 =l alloc8 8
+	storel %num.L46.val,%num.L46
+	storel %den.L47.val,%den.L47
+	ret
+}

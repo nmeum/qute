@@ -173,7 +173,7 @@ exploreEntry opts ktest engine entry =
 
 exploreFile :: Opts -> IO Int
 exploreFile opts@Opts {optBase = base} = do
-  (prog, func) <- CMD.parseEntryFile $ CMD.optQBEFile base
+  (prog, func) <- CMD.loadProg base
 
   let binName = CMD.optQBEFile $ optBase opts
       logLevel = if optWriteAll opts then LogAll else LogErr

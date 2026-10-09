@@ -21,7 +21,7 @@ fromWord v
 
 execFile :: CMD.BasicArgs -> IO Int
 execFile opts = do
-  (prog, func) <- CMD.parseEntryFile $ CMD.optQBEFile opts
+  (prog, func) <- CMD.loadProg opts
 
   env <- mkEnv prog (CMD.optMemStart opts) (CMD.optMemSize opts)
   res <- run (env :: Env DE.RegVal Word8) (execFunc func [])

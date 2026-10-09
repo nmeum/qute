@@ -71,9 +71,11 @@ library
       Language.QBE.Simulator.Default.Generator
 
     exposed-modules:
+      Data.Archive,
       Language.QBE.Analysis.CFG,
       Language.QBE.Analysis.CDG,
       Language.QBE.Analysis.Graph,
+      Language.QBE.Linker,
       Language.QBE.Simulator,
       Language.QBE.Simulator.State,
       Language.QBE.Simulator.Error,
@@ -106,11 +108,14 @@ test-suite qute-test
     ghc-options:      -O0
 
     other-modules:
+      Archive,
+      Linker,
       Analysis,
       Simulator,
       Expression,
       Memory,
-      State
+      State,
+      Util
 
     build-depends:
         base,

@@ -5,7 +5,9 @@
 module Main (main) where
 
 import Analysis
+import Archive
 import Expression
+import Linker
 import Memory
 import Simulator
 import State
@@ -18,7 +20,9 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [ simTests,
+    [ archiveTests,
+      linkerTests,
+      simTests,
       memTests,
       analTests,
       exprTests,
