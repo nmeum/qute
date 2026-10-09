@@ -7,6 +7,7 @@
 module Language.QBE
   ( Program,
     Definition (..),
+    localDefs,
     globalFuncs,
     Language.QBE.parse,
     ExecError (..),
@@ -74,6 +75,22 @@ globalFuncs = mapMaybe globalFuncs'
     globalFuncs' :: Definition -> Maybe QBE.FuncDef
     globalFuncs' (DefFunc f) = Just f
     globalFuncs' _ = Nothing
+
+-- | Returns all non-exported data and function definitions of a 'Program'.
+localDefs :: Program -> [QBE.GlobalIdent]
+localDefs = mapMaybe go
+  where
+    isGlobal :: [QBE.Linkage] -> Bool
+    isGlobal = elem QBE.LExport
+
+    go :: Definition -> Maybe QBE.GlobalIdent
+    go (DefData dd)
+      | isGlobal (QBE.linkage dd) = Nothing
+      | otherwise = Just (QBE.name dd)
+    go (DefFunc fd)
+      | isGlobal (QBE.fLinkage fd) = Nothing
+      | otherwise = Just (QBE.fName fd)
+    go _ = Nothing
 
 ------------------------------------------------------------------------
 
