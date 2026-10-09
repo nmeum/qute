@@ -28,6 +28,8 @@ data EvalError
   | FuncArgsMismatch QBE.GlobalIdent
   | InvalidPhiPosition
   | MemoryError String
+  | -- | Terminate execution path in symbolic execution.
+    TerminatePath
   deriving (Eq)
 
 instance Show EvalError where
@@ -49,5 +51,6 @@ instance Show EvalError where
   show (FuncArgsMismatch ident) = "FuncArgsMismatch: '" ++ show ident ++ "'"
   show InvalidPhiPosition = "InvalidPhiPosition"
   show (MemoryError msg) = "MemoryError: " ++ show msg
+  show TerminatePath = "TerminatePath"
 
 instance Exception EvalError

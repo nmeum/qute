@@ -30,7 +30,7 @@ import Language.QBE.Simulator.Concolic.State
     makeConcolic,
     runPath,
   )
-import Language.QBE.Simulator.Error (EvalError)
+import Language.QBE.Simulator.Error (EvalError (TerminatePath))
 import Language.QBE.Types qualified as QBE
 import SimpleBV qualified as SMT
 import System.Directory (findExecutable)
@@ -122,7 +122,10 @@ explorePath simState = do
         case maybePath of
           Left (err :: ErrorPath) ->
             let st = pathInput err
-             in (Just $ pathError err, errTracer st, errStore st)
+                pe = case pathError err of
+                  TerminatePath -> Nothing
+                  errKind -> Just errKind
+             in (pe, errTracer st, errStore st)
           Right (t, s) -> (Nothing, t, s)
 
   -- Before finalizing the store, we can extract the variables we encountered
