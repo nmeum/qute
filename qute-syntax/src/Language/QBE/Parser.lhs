@@ -453,6 +453,7 @@ temporaries.
 linkage :: Parser Q.Linkage
 linkage =
   wsNL (bind "export" Q.LExport)
+    <|> wsNL (bind "common" Q.LCommon)
     <|> wsNL (bind "thread" Q.LThread)
     <|> do
       _ <- ws1 $ string "section"

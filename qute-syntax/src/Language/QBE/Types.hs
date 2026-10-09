@@ -174,6 +174,7 @@ data Value
 
 data Linkage
   = LExport
+  | LCommon
   | LThread
   | LSection String (Maybe String)
   deriving (Show, Eq)
