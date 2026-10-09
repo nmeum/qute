@@ -2,13 +2,13 @@
 --
 -- SPDX-License-Identifier: GPL-3.0-only
 
--- | This module implements type classes on top of 'Language.Q.Types' that
--- implement a map operation over the Types, Q.Values, and Q.GlobalIdents used by
--- AST nodes.
+-- | This module implements type classes on top of 'Language.QBE.Types' that
+-- implement a map operation over the 'Language.QBE.Value',
+-- 'Language.QBE.UserIdent', and 'Language.QBE.GlobalIdent' used by AST nodes.
 module Language.QBE.Uses
-  ( Operation (..),
-    Definition (..),
-    UsesType (..),
+  ( Value (..),
+    GlobalIdent (..),
+    UserIdent (..),
   )
 where
 
@@ -18,27 +18,29 @@ import Language.QBE.Types qualified as Q
 mapFieldType :: Q.Field -> (Q.UserIdent -> Q.UserIdent) -> Q.Field
 mapFieldType (sty, n) f = (mapType sty f, n)
 
-class UsesType a where
+-- | Type class for AST nodes using a 'Q.UserIdent' internally.
+class UserIdent a where
+  -- | Invoke the provided function for each 'Q.UserIdent' within the AST node @a@.
   mapType :: a -> (Q.UserIdent -> Q.UserIdent) -> a
 
-instance UsesType Q.TypeDef where
+instance UserIdent Q.TypeDef where
   mapType ty@(Q.TypeDef {Q.aggName = name, Q.aggType = aTy}) f =
     ty {Q.aggName = f name, Q.aggType = mapType aTy f}
 
-instance UsesType Q.SubType where
+instance UserIdent Q.SubType where
   mapType (Q.SUserDef uid) f = Q.SUserDef $ f uid
   mapType ty@(Q.SExtType _) _ = ty
 
-instance UsesType Q.AggType where
+instance UserIdent Q.AggType where
   mapType (Q.ARegular fields) f = Q.ARegular $ map (`mapFieldType` f) fields
   mapType (Q.AUnion fields) f = Q.AUnion $ map (map (`mapFieldType` f)) fields
   mapType (Q.AOpaque w64) _ = Q.AOpaque w64
 
-instance UsesType Q.Abity where
+instance UserIdent Q.Abity where
   mapType (Q.AUserDef uid) f = Q.AUserDef (f uid)
   mapType abity _ = abity
 
-instance UsesType Q.FuncDef where
+instance UserIdent Q.FuncDef where
   mapType func@(Q.FuncDef {Q.fAbity = Just abity}) f =
     func {Q.fAbity = Just $ mapType abity f}
   mapType func _ = func
@@ -50,40 +52,42 @@ replaceGlobal _ v@(Q.VLocal _) = v
 replaceGlobal f (Q.VConst dynConst) =
   Q.VConst $ mapGlobals dynConst f
 
-class Definition a where
+-- | Type class for AST nodes using a 'Q.GlobalIdent' internally.
+class GlobalIdent a where
+  -- | Invoke the provided function for each 'Q.GlobalIdent' within the AST node @a@.
   mapGlobals :: a -> (Q.GlobalIdent -> Q.GlobalIdent) -> a
 
-instance Definition Q.Const where
+instance GlobalIdent Q.Const where
   mapGlobals (Q.Global i) f = Q.Global (f i)
   mapGlobals c@(Q.DFP _) _ = c
   mapGlobals c@(Q.SFP _) _ = c
   mapGlobals c@(Q.Number _) _ = c
 
-instance Definition Q.DynConst where
+instance GlobalIdent Q.DynConst where
   mapGlobals (Q.Const c) f = Q.Const $ mapGlobals c f
   mapGlobals (Q.Thread i) f = Q.Thread (f i)
   mapGlobals (Q.Common i) f = Q.Common (f i)
   mapGlobals (Q.Extern i) f = Q.Extern (f i)
   mapGlobals (Q.ExternThread i) f = Q.ExternThread (f i)
 
-instance Definition Q.DataDef where
+instance GlobalIdent Q.DataDef where
   mapGlobals def f =
     def
       { Q.name = f $ Q.name def,
         Q.objs = map (`mapGlobals` f) $ Q.objs def
       }
 
-instance Definition Q.DataObj where
+instance GlobalIdent Q.DataObj where
   mapGlobals o@(Q.OZeroFill _) _ = o
   mapGlobals (Q.OItem ty items) f =
     Q.OItem ty $ map (`mapGlobals` f) items
 
-instance Definition Q.DataItem where
+instance GlobalIdent Q.DataItem where
   mapGlobals (Q.DSymOff ident off) f = Q.DSymOff (f ident) off
   mapGlobals (Q.DConst c) f = Q.DConst $ mapGlobals c f
   mapGlobals s@(Q.DString _) _ = s
 
-instance Definition Q.FuncDef where
+instance GlobalIdent Q.FuncDef where
   mapGlobals func f =
     func
       { Q.fName = f (Q.fName func),
@@ -92,17 +96,19 @@ instance Definition Q.FuncDef where
 
 ------------------------------------------------------------------------
 
-class Operation a where
+-- | Type class for AST nodes using a 'Q.Value' internally.
+class Value a where
+  -- | Invoke the provided function for each 'Q.Value' within the AST node @a@.
   mapOperands :: a -> (Q.Value -> Q.Value) -> a
 
-instance Operation Q.FuncArg where
+instance Value Q.FuncArg where
   mapOperands fa f =
     case fa of
       Q.ArgReg a v -> Q.ArgReg a (f v)
       Q.ArgEnv v -> Q.ArgEnv (f v)
       Q.ArgVar -> Q.ArgVar
 
-instance Operation Q.JumpInstr where
+instance Value Q.JumpInstr where
   mapOperands ji f =
     case ji of
       Q.Jump ident -> Q.Jump ident
@@ -110,7 +116,7 @@ instance Operation Q.JumpInstr where
       Q.Return mayVal -> Q.Return (f <$> mayVal)
       Q.Halt -> Q.Halt
 
-instance Operation Q.Instr where
+instance Value Q.Instr where
   mapOperands instr f =
     case instr of
       Q.Add lhs rhs -> Q.Add (f lhs) (f rhs)
@@ -139,7 +145,7 @@ instance Operation Q.Instr where
       Q.Copy val -> Q.Copy (f val)
       Q.VAArg val -> Q.VAArg (f val)
 
-instance Operation Q.VolatileInstr where
+instance Value Q.VolatileInstr where
   mapOperands vi f =
     case vi of
       Q.Store ty lhs rhs -> Q.Store ty (f lhs) (f rhs)
@@ -147,17 +153,17 @@ instance Operation Q.VolatileInstr where
       Q.Blit lhs rhs w -> Q.Blit (f lhs) (f rhs) w
       dbg@(Q.DBGLoc {}) -> dbg
 
-instance Operation Q.Statement where
+instance Value Q.Statement where
   mapOperands s f =
     case s of
       Q.Assign ident ty instr -> Q.Assign ident ty (mapOperands instr f)
       Q.Call retTy func args -> Q.Call retTy (f func) (map (`mapOperands` f) args)
       Q.Volatile vi -> Q.Volatile (mapOperands vi f)
 
-instance Operation Q.Phi where
+instance Value Q.Phi where
   mapOperands p f = p {Q.pLabels = Map.map f (Q.pLabels p)}
 
-instance Operation Q.Block where
+instance Value Q.Block where
   mapOperands b f =
     b
       { Q.phi = map (`mapOperands` f) $ Q.phi b,
