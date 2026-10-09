@@ -11,11 +11,18 @@
 -- file names with spaces in them.
 --
 -- See also <https://marc.info/?t=179121127700004&r=1&w=2>.
-module Data.Archive (Object (..), Data.Archive.parse) where
+module Data.Archive
+  ( Object (..),
+    Data.Archive.parse,
+    qbeArchive,
+  )
+where
 
 import Control.Applicative ((<|>))
+import Control.Exception (throwIO)
 import Control.Monad (replicateM, void)
 import Data.Maybe (catMaybes)
+import Language.QBE (Program, parse)
 import Numeric (readOct)
 import Text.ParserCombinators.Parsec
   ( ParseError,
@@ -137,7 +144,22 @@ object = do
         oData = body
       }
 
+------------------------------------------------------------------------
+
 parse :: SourceName -> String -> Either ParseError [Object]
 parse =
   Text.ParserCombinators.Parsec.parse
     ((magicString >> many object) <* eof)
+
+qbeArchive :: FilePath -> IO [Program]
+qbeArchive fp = do
+  ar <- readFile fp
+  objs <- case Data.Archive.parse fp ar of
+    Right x -> pure x
+    Left err -> throwIO err
+  mapM (\o -> parseFile (oName o) (oData o)) objs
+  where
+    parseFile name body =
+      case Language.QBE.parse name body of
+        Right x -> pure x
+        Left err -> throwIO err

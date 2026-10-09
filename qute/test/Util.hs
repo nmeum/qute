@@ -5,8 +5,8 @@
 module Util where
 
 import Control.Exception (throwIO)
-import Data.Archive (Object (Object, oData), parse)
-import Language.QBE (Program, parse)
+import Data.Archive (Object, parse, qbeArchive)
+import Language.QBE (Program)
 import System.FilePath ((</>))
 
 readArchive :: FilePath -> IO [Object]
@@ -17,12 +17,5 @@ readArchive fileName = do
     Left err -> throwIO err
 
 parseArchive :: FilePath -> IO [Program]
-parseArchive fileName = do
-  objs <- readArchive fileName
-  mapM parseFile objs
-  where
-    parseFile :: Object -> IO Program
-    parseFile (Object {oData = qbe}) =
-      case Language.QBE.parse fileName qbe of
-        Right prog -> pure prog
-        Left err -> throwIO err
+parseArchive fileName =
+  qbeArchive ("test" </> "testdata" </> fileName)
