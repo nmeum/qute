@@ -6,12 +6,13 @@
 module Language.QBE.CmdLine
   ( BasicArgs (..),
     basicArgs,
-    entryFunc,
-    parseEntryFile,
+    loadProg,
   )
 where
 
+import Data.Archive (qbeArchive)
 import Language.QBE (Program, parseAndFind)
+import Language.QBE.Linker (link)
 import Language.QBE.Simulator.Memory qualified as MEM
 import Language.QBE.Types qualified as QBE
 import Options.Applicative qualified as OPT
@@ -66,3 +67,14 @@ entryFunc = QBE.GlobalIdent "main"
 parseEntryFile :: FilePath -> IO (Program, QBE.FuncDef)
 parseEntryFile filePath =
   readFile filePath >>= parseAndFind entryFunc
+
+-- | Load the program specified in 'BasicArgs'. Returns the
+-- loaded 'Program' and the entry function.
+loadProg :: BasicArgs -> IO (Program, QBE.FuncDef)
+loadProg opts = do
+  (prog, func) <- parseEntryFile $ optQBEFile opts
+  linked <-
+    case optQBEArchive opts of
+      Nothing -> pure prog
+      Just ar -> (\xs -> link $ prog : xs) <$> qbeArchive ar
+  pure (linked, func)

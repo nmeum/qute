@@ -6,13 +6,11 @@ module Main (main) where
 
 import Control.Monad (when)
 import Control.Monad.State.Strict (evalStateT, gets, liftIO)
-import Data.Archive (qbeArchive)
 import Data.Binary (encodeFile)
 import Data.KTest (KTest (KTest), KTestObj, fromAssign)
 import Data.String (fromString)
 import Language.QBE.Backend.Store (Assign)
 import Language.QBE.CmdLine qualified as CMD
-import Language.QBE.Linker (link)
 import Language.QBE.Simulator (execFunc)
 import Language.QBE.Simulator.Concolic.State (mkEnv)
 import Language.QBE.Simulator.Error (EvalError)
@@ -175,11 +173,7 @@ exploreEntry opts ktest engine entry =
 
 exploreFile :: Opts -> IO Int
 exploreFile opts@Opts {optBase = base} = do
-  (prog, func) <- CMD.parseEntryFile $ CMD.optQBEFile base
-  linked <-
-    case CMD.optQBEArchive base of
-      Nothing -> pure prog
-      Just ar -> (\xs -> link $ prog : xs) <$> qbeArchive ar
+  (prog, func) <- CMD.loadProg base
 
   let binName = CMD.optQBEFile $ optBase opts
       logLevel = if optWriteAll opts then LogAll else LogErr
@@ -189,7 +183,7 @@ exploreFile opts@Opts {optBase = base} = do
         Just <$> mkKTestConf logLevel dir binName
       Nothing -> pure Nothing
 
-  env <- mkEnv linked (CMD.optMemStart base) (CMD.optMemSize base) (optSeed opts)
+  env <- mkEnv prog (CMD.optMemStart base) (CMD.optMemSize base) (optSeed opts)
   case optLog opts of
     Just fn -> withFile fn WriteMode (exploreWithHandle ktest env func)
     Nothing -> do
