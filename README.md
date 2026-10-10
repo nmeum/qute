@@ -201,7 +201,7 @@ These hooks can be enabled using:
 
 Further, a [Guix] environment for development purposes can be obtained using:
 
-	$ guix time-machine -C .guix/channels.scm -- shell -L .guix/modules/ -m .guix/manifest.scm
+	$ guix time-machine -C .guix/channels.scm -- shell -CN -L .guix/modules/ -m .guix/manifest.scm
 
 ### License
 
