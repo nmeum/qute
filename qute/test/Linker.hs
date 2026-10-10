@@ -67,7 +67,7 @@ linkerTests =
           let linked = link [prog, prog]
 
           map QBE.name (findData linked)
-            @?= [QBE.GlobalIdent ".L116", QBE.GlobalIdent ".L116.1"]
+            @?= [QBE.GlobalIdent ".L116", QBE.GlobalIdent ".L116.QG1"]
 
           func <- findFunc (reverse linked) "__assert"
           let block = QBE.fEntry func
@@ -75,7 +75,7 @@ linkerTests =
               funcArg =
                 QBE.ArgReg
                   (QBE.ABase QBE.Long)
-                  (QBE.VConst (QBE.Const $ QBE.Global (QBE.GlobalIdent ".L116.1")))
+                  (QBE.VConst (QBE.Const $ QBE.Global (QBE.GlobalIdent ".L116.QG1")))
           QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]],
       testCase "Link files with helper function" $
         do
@@ -83,7 +83,7 @@ linkerTests =
           let linked = link progs
 
           localDefs linked
-            @?= [QBE.GlobalIdent "myhelper", QBE.GlobalIdent "myhelper.1"]
+            @?= [QBE.GlobalIdent "myhelper", QBE.GlobalIdent "myhelper.QG1"]
 
           func <- findFunc linked "myfunc2"
           let block = QBE.fEntry func
@@ -91,7 +91,7 @@ linkerTests =
               funcArg =
                 QBE.ArgReg
                   (QBE.ABase QBE.Long)
-                  (QBE.VConst (QBE.Extern $ QBE.GlobalIdent "myhelper.1"))
+                  (QBE.VConst (QBE.Extern $ QBE.GlobalIdent "myhelper.QG1"))
           QBE.stmt block @?= [QBE.Call Nothing funcVal [funcArg]],
       testCase "Data reference within a data definition" $
         do
@@ -102,8 +102,8 @@ linkerTests =
           localDefs linked
             @?= [ QBE.GlobalIdent "somedata",
                   QBE.GlobalIdent "moredata",
-                  QBE.GlobalIdent "somedata.1",
-                  QBE.GlobalIdent "moredata.1"
+                  QBE.GlobalIdent "somedata.QG1",
+                  QBE.GlobalIdent "moredata.QG1"
                 ],
       testCase "Link files with conflicting type definition" $
         do
@@ -111,10 +111,10 @@ linkerTests =
           let linked = link progs
 
           typeDefs linked
-            @?= [QBE.UserIdent "retTy", QBE.UserIdent "retTy.1"]
+            @?= [QBE.UserIdent "retTy", QBE.UserIdent "retTy.QU1"]
 
           func <- findFunc linked "idivmax"
-          QBE.fAbity func @?= Just (QBE.AUserDef $ QBE.UserIdent "retTy.1"),
+          QBE.fAbity func @?= Just (QBE.AUserDef $ QBE.UserIdent "retTy.QU1"),
       testCase "Type definition with fields" $
         do
           prog <- parseFile "type-definition-with-fields.ar"
@@ -124,26 +124,26 @@ linkerTests =
             @?= [ QBE.UserIdent "type.39",
                   QBE.UserIdent "type.38",
                   QBE.UserIdent "something",
-                  QBE.UserIdent "type.39.1",
-                  QBE.UserIdent "type.38.1",
-                  QBE.UserIdent "something.1"
+                  QBE.UserIdent "type.39.QU1",
+                  QBE.UserIdent "type.38.QU1",
+                  QBE.UserIdent "something.QU1"
                 ]
 
-          ty1 <- findType linked "something.1"
+          ty1 <- findType linked "something.QU1"
           ty1
             @?= QBE.TypeDef
-              (QBE.UserIdent "something.1")
+              (QBE.UserIdent "something.QU1")
               Nothing
-              (QBE.AUnion [[(QBE.SUserDef $ QBE.UserIdent "type.38.1", Just 1)]])
+              (QBE.AUnion [[(QBE.SUserDef $ QBE.UserIdent "type.38.QU1", Just 1)]])
 
-          ty2 <- findType linked "type.38.1"
+          ty2 <- findType linked "type.38.QU1"
           ty2
             @?= QBE.TypeDef
-              (QBE.UserIdent "type.38.1")
+              (QBE.UserIdent "type.38.QU1")
               (Just 8)
               ( QBE.ARegular
                   [ (QBE.SExtType $ QBE.Base QBE.Long, Just 1),
-                    (QBE.SUserDef $ QBE.UserIdent "type.39.1", Just 1)
+                    (QBE.SUserDef $ QBE.UserIdent "type.39.QU1", Just 1)
                   ]
               )
     ]
