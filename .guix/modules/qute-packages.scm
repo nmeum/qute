@@ -68,29 +68,6 @@
     (home-page "https://klee-se.org")
     (synopsis "Tool for KLEE's ktest test input format")))
 
-(define-public ghc-simple-smt
-  (package
-    (name "ghc-simple-smt")
-    (version "1.0.1")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (hackage-uri "simple-smt" version))
-       (sha256
-        (base32 "0iw0kg4ga5g393x4j9xqgrlr6mzwm5xdjg9mjp7jc2q7igrfcx5z"))))
-    (build-system haskell-build-system)
-    (arguments
-     `(#:tests? #f
-       #:configure-flags '("lib:simple-smt")))
-    (properties '((upstream-name . "simple-smt")))
-    (home-page "https://github.com/yav/simple-smt")
-    (synopsis "Simple library to interact with SMT solvers via SMT-LIB")
-    (description
-     "This package provides a simple library to interact with an external
-@acronym{SMT, satisfiability modulo theories} solver (such as @code{z3})
-via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
-    (license license:bsd-3)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-public qute-syntax
@@ -101,7 +78,6 @@ via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
                         "git-checkout"
                         #:recursive? #t))
     (build-system haskell-build-system)
-    (inputs (list ghc-9.2))
     (native-inputs
       (list
         c:qbe
@@ -121,7 +97,6 @@ via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
                         "git-checkout"
                         #:recursive? #t))
     (build-system haskell-build-system)
-    (inputs (list ghc-9.2))
     (native-inputs
       (list
         qute-syntax
@@ -140,8 +115,7 @@ via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
                         "git-checkout"
                         #:recursive? #t))
     (build-system haskell-build-system)
-    (inputs (list ghc-9.2
-                  bitwuzla)) ;needed for 'check.
+    (inputs (list bitwuzla)) ;needed for 'check.
     (native-inputs
       (list
         qute
@@ -164,7 +138,6 @@ via the standardized @url{https://smt-lib.org, SMT-LIB} format.")
                         "git-checkout"
                         #:recursive? #t))
     (build-system haskell-build-system)
-    (inputs (list ghc-9.2))
     (native-inputs
       (list
         qute

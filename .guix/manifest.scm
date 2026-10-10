@@ -32,7 +32,9 @@
             coreutils
             ktest-tool
             hlint
-            apply-refact
+            ; TODO: apply-refact is broken since ghc >= 9.10.
+            ; See <https://github.com/mpickering/apply-refact/pull/149>.
+            ; apply-refact
             reuse
             cproc
             git
