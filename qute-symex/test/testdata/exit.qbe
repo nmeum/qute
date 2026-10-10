@@ -1,0 +1,33 @@
+export
+function $__assert_fail() {
+@start.1
+@body.2
+	hlt
+}
+data $.Lstring.3 = align 1 { b "a\000", }
+export
+function w $main() {
+@start.3
+	%.1 =l alloc4 4
+@body.4
+	%.2 =l extsw 1
+	call extern $qute_make_symbolic(l %.1, l %.2, l 4, l $.Lstring.3)
+	%.3 =w loadw %.1
+	%.4 =w cslew %.3, 0
+	jnz %.4, @if_true.5, @if_false.6
+@if_true.5
+	call extern $qute_exit(w 0)
+@if_false.6
+	%.5 =w loadw %.1
+	%.6 =w csgtw %.5, 0
+	jnz %.6, @logic_true.7, @logic_or.10
+@logic_or.10
+	call extern $__assert_fail()
+	hlt
+@logic_true.7
+	jmp @logic_join.9
+@logic_false.8
+@logic_join.9
+	%.7 =w phi @logic_true.7 1, @logic_false.8 0
+	ret 0
+}

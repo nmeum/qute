@@ -7,7 +7,7 @@ module Explorer (exploreTests) where
 import Data.Bifunctor (second)
 import Data.List (partition, sort, uncons)
 import Data.Map qualified as Map
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Language.QBE (Program, parseAndFind)
 import Language.QBE.Backend.Store qualified as ST
 import Language.QBE.Simulator.Concolic.State (mkEnv)
@@ -309,5 +309,15 @@ exploreTests =
 
           let errorVars = pathVars $ fst $ fromJust $ uncons wErr
               errorVal = Map.lookup "a1" errorVars
-          errorVal @?= Just (DE.VWord 0x23523929)
+          errorVal @?= Just (DE.VWord 0x23523929),
+      testCase "code calling exit(3)" $
+        do
+          (prog, funcDef) <-
+            getFuncAndProg
+              "exit.qbe"
+              (QBE.GlobalIdent "main")
+
+          eTraces <- explore' prog funcDef []
+          length eTraces @?= 2
+          length (filter (isNothing . pathErr) eTraces) @?= 2
     ]

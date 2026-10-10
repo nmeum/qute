@@ -35,7 +35,7 @@ import Language.QBE.Simulator.Concolic.Expression qualified as CE
 import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Default.Funcs (lookupSimFunc)
 import Language.QBE.Simulator.Default.State qualified as DS
-import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch, TypingError))
+import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch, TerminatePath, TypingError))
 import Language.QBE.Simulator.Expression qualified as E
 import Language.QBE.Simulator.Memory qualified as MEM
 import Language.QBE.Simulator.State
@@ -114,8 +114,16 @@ makeSymbolicArray _ [arrayPtr, numElem, elemSize, namePtr] = do
   liftState (DS.SimState $ DS.storeValues arrayAddr values) >> pure Nothing
 makeSymbolicArray ident _ = throwError $ FuncArgsMismatch ident
 
+exit ::
+  QBE.GlobalIdent ->
+  [CE.Concolic DE.RegVal] ->
+  SimState (Maybe (CE.Concolic DE.RegVal))
+exit _ [_code] = throwError TerminatePath
+exit ident _ = throwError $ FuncArgsMismatch ident
+
 findSimFunc :: QBE.GlobalIdent -> Maybe ([CE.Concolic DE.RegVal] -> SimState (Maybe (CE.Concolic DE.RegVal)))
 findSimFunc i@(QBE.GlobalIdent "qute_make_symbolic") = Just (makeSymbolicArray i)
+findSimFunc i@(QBE.GlobalIdent "qute_exit") = Just (exit i)
 findSimFunc ident = lookupSimFunc ident
 
 ------------------------------------------------------------------------
