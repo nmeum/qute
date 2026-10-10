@@ -9,6 +9,7 @@
              (gnu packages c)
              (gnu packages curl)
              (gnu packages haskell-apps)
+             (gnu packages haskell-xyz)
              (gnu packages license)
              (gnu packages nss)
              (gnu packages version-control)
@@ -22,6 +23,10 @@
         (package->development-manifest qute-syntax)
         (package->development-manifest qute-symex)
         (package->development-manifest qute-cli)
+
+        ;; Required by the benchmarks.
+        (packages->manifest
+          (list ghc-criterion))
 
         ;; Extra packages, useful for development purposes.
         (packages->manifest
