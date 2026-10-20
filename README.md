@@ -77,11 +77,28 @@ The following subsections demonstrate the utilization of this program components
 Consider the following "Hello, World!" program:
 
 ```C
+#include <stdarg.h>
 #include <stdio.h>
 
-int main(void) {
-	puts("Hello, World!");
-	return 0;
+int
+vsum(int count, ...)
+{
+	int sum = 0;
+	va_list args;
+
+	va_start(args, count);
+	for (int i = 0; i < count; i++) {
+		sum += va_arg(args, int);
+	}
+	va_end(args);
+
+	return sum;
+}
+
+int
+main(void)
+{
+	return vsum(4, 23, 5, 4, 10); // 42
 }
 ```
 
@@ -96,12 +113,14 @@ The resulting QBE file can then be executed with the concrete semantics using:
 
 ```
 $ qute hello.qbe
-Hello, World!
+$ echo $?
+42
 ```
 
-Note that `qute` is only able to invoke the `puts(3)` function because it intercepts its execution, providing a "simulated" version of it.
-Presently, only a limited amount of standard library functions are intercepted in this way.
-As such, interactions with the file system or more complex output functions (e.g. `printf(3)`) are currently not supported.
+Note that `qute` also supports more sophisticated output function, such as `printf(3)`.
+Unfortunately, using such functions requires compiling a C standard library to a QBE representation.
+Currently, [SCC's libc][SCC] is used for this purpose.
+More information is [available separately][SCC Qute].
 
 #### Symbolic Execution
 
@@ -218,6 +237,7 @@ This project uses the [REUSE Specification] to indicated used software license.
 [KLEE ktest]: https://klee-se.org/releases/docs/v3.1/tutorials/testing-function/#klee-generated-test-cases
 [SCC]: https://www.simple-cc.org/
 [SCC patch]: https://git.simple-cc.org/scc/commit/575a2d87cac49174b7f53aa6ac5f9186c2165697.html
+[SCC Qute]: https://git.8pit.net/scc/README.qute.md.html
 [cproc]: https://sr.ht/~mcf/cproc/
 [Hare]: https://harelang.org/
 [Haskell]: https://haskell.org/
