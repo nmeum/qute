@@ -1122,7 +1122,7 @@ blockTests =
               [D.VWord 1, D.VWord 2]
               "function w $varAdd1(w %a, ...) {\n\
               \@start\n\
-              \%ap =l alloc8 8\n\
+              \%ap =l alloc8 24\n\
               \vastart %ap\n\
               \%b =w vaarg %ap\n\
               \%c =w add %a, %b\n\
@@ -1138,7 +1138,7 @@ blockTests =
               [D.VWord 1, D.VWord 2, D.VWord 2342]
               "function w $varAdd1(w %a, ...) {\n\
               \@start\n\
-              \%ap =l alloc8 8\n\
+              \%ap =l alloc8 24\n\
               \vastart %ap\n\
               \ret 0\n\
               \}"
@@ -1184,7 +1184,7 @@ blockTests =
               [D.VWord 0xdeadbeef, D.VLong 0xdecafbaddecafbad, D.VWord 0xffffffff, D.VDouble 23.1337]
               "function w $varAdd(...) {\n\
               \@start\n\
-              \%ap =l alloc8 8\n\
+              \%ap =l alloc8 24\n\
               \vastart %ap\n\
               \%v.1 =w vaarg %ap\n\
               \%v.2 =l vaarg %ap\n\
@@ -1209,11 +1209,13 @@ blockTests =
               [D.VWord 0xdeadbeef, D.VLong 0xdecafbaddecafbad, D.VWord 0xffffffff, D.VDouble 23.1337]
               "function w $varAdd(...) {\n\
               \@start\n\
-              \%ap =l alloc8 8\n\
+              \%ap =l alloc8 24\n\
               \vastart %ap\n\
-              \%p.1 =l loadl %ap\n\
+              \%t.1 =l add %ap, 8\n\
+              \%p.1 =l loadl %t.1\n\
               \vastart %ap\n\
-              \%p.2 =l loadl %ap\n\
+              \%t.2 =l add %ap, 8\n\
+              \%p.2 =l loadl %t.2\n\
               \%r.p =w cnel %p.1, %p.2\n\
               \@vaarg\n\
               \%v.1 =w vaarg %ap\n\
@@ -1232,6 +1234,15 @@ blockTests =
               \}"
 
           res @?= Just (D.VWord 1),
+      testCase "va_copy" $
+        do
+          res <-
+            parseAndExecFile
+              (QBE.GlobalIdent "main")
+              []
+              "va-copy.qbe"
+
+          res @?= Just (D.VWord 100),
       testCase "invoke function via function pointer" $
         do
           res <-

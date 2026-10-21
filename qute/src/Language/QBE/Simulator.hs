@@ -80,12 +80,30 @@ execVolatile (QBE.VAStart val) = do
       let valType = E.getType firstValue
           valSize = fromIntegral $ QBE.extTypeByteSize valType
 
-      -- Initially, the pointer stored in our representation of the “variable
-      -- argument list” points one element beyond the argument list. This
-      -- allows us to determine the element pointer in `vaarg` by always
-      -- substracting the size of the requested element from the pointer.
-      writeMemory ptr (QBE.Base QBE.Long) $
-        E.fromLit (QBE.Base QBE.Long) (firstAddr + valSize)
+      -- The pointer stored in our representation of the `overflow_arg_area` of
+      -- `va_list` points one element beyond the argument list. This allows us
+      -- to determine the element pointer in `vaarg` by always substracting the
+      -- size of the requested element from the pointer.
+      --
+      -- TODO: This is incompatible with the x86 System V ABI, which requires
+      -- `overflow_arg_area` to be „initialized with the address of the first
+      -- argument passed on the stack“. However, we can't do that because
+      -- `stackSpill` places elements from low→high addresses on the stack and
+      -- the x86 System V ABI assumes they are instead stored from high→low.
+      let overflowPtr = firstAddr + valSize
+
+      -- This is the layout of the `va_list` from the x86 System V ABI. It is
+      -- implemented in a way that it signals that all vaargs are on the stack.
+      --
+      -- See also <https://github.com/klee/klee/blob/v3.3/lib/Core/Executor.cpp#L1962-L1981>.
+      writeMemory ptr (QBE.Base QBE.Word) $
+        E.fromLit (QBE.Base QBE.Word) 48 -- gp_offset
+      writeMemory (ptr + 4) (QBE.Base QBE.Word) $
+        E.fromLit (QBE.Base QBE.Word) 176 -- fp_offset
+      writeMemory (ptr + 8) (QBE.Base QBE.Long) $
+        E.fromLit (QBE.Base QBE.Long) overflowPtr -- overflow_arg_area
+      writeMemory (ptr + 16) (QBE.Base QBE.Long) $
+        E.fromLit (QBE.Base QBE.Long) 0 -- reg_save_area
     Nothing -> pure ()
 execVolatile (QBE.DBGLoc {}) = pure ()
 {-# INLINEABLE execVolatile #-}
@@ -202,13 +220,18 @@ execInstr retTy (QBE.Cast value) = do
   v <- lookupValue valueType value
   pure (E.fromLit (QBE.Base retTy) $ E.toWord64 v)
 execInstr retTy (QBE.VAArg argLst) = do
-  -- 'argsCtx' represents the “variable argument list”. Currently,
-  -- it is not modeled after a specific ABI but simply contains a
-  -- pointer to the previous argument. This pointer is updated by
-  -- each invocation of the `vaarg` instruction.
+  -- 'argsCtx' represents a `va_list` with the memory layout as
+  -- defined in the x86 System V ABI. Below, we extract the
+  -- `overflow_arg_area` pointer. The value of this pointer is
+  -- currently not aligned with the System V ABI. As such, the
+  -- implementation of `vaarg` is also incompatible with the
+  -- description of the `va_arg` macro in the System V ABI.
+  --
+  -- See the `vastart` implementation for more information.
   argsCtx <- lookupValue QBE.Long argLst >>= toAddress
+  let overflowArgArea = argsCtx + 8
 
-  prevPtr <- readMemory (QBE.LBase QBE.Long) argsCtx
+  prevPtr <- readMemory (QBE.LBase QBE.Long) overflowArgArea
   let retTySize =
         E.fromLit
           (QBE.Base QBE.Long)
@@ -221,7 +244,7 @@ execInstr retTy (QBE.VAArg argLst) = do
       (prevPtr `E.sub` retTySize) >>= (`stackAlign` retTySize)
 
   val <- toAddress ptrAligned >>= readMemory (QBE.LBase retTy)
-  writeMemory argsCtx (QBE.Base QBE.Long) ptrAligned
+  writeMemory overflowArgArea (QBE.Base QBE.Long) ptrAligned
   pure val
 {-# INLINEABLE execInstr #-}
 

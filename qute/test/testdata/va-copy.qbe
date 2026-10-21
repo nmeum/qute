@@ -1,0 +1,40 @@
+type :.6 = align 4 { 8 }
+type :.25 = align 8 { 64 }
+export function w $vsum(w %count.L117.val, ...)
+{
+@.L84
+	%count.L117 =l	alloc4	4
+	%args.L119 =l	alloc8	24
+	%copy.L120 =l	alloc8	24
+	%sum.L121 =l	alloc4	4
+	%i.L126 =l	alloc4	4
+		storew	%count.L117.val,%count.L117
+		vastart %args.L119
+		blit	%args.L119,%copy.L120,24
+		storew	0,%sum.L121
+		storew	0,%i.L126
+		jmp	@.L71
+@.L72
+		%.L75 =w vaarg %copy.L120
+	%.L76 =w	loadsw	%sum.L121
+	%.L77 =w	add	%.L76,%.L75
+		storew	%.L77,%sum.L121
+@.L73
+	%.L78 =w	loadsw	%i.L126
+	%.L79 =w	add	%.L78,1
+		storew	%.L79,%i.L126
+@.L71
+	%.L80 =w	loadsw	%i.L126
+	%.L81 =w	loadsw	%count.L117
+	%.L82 =w	csltw	%.L80,%.L81
+		jnz	%.L82,@.L72,@.L74
+@.L74
+	%.L83 =w	loadsw	%sum.L121
+		ret	%.L83
+}
+export function w $main()
+{
+@.L92
+	%.L86 =w	call	$vsum(w 4, w 10, w 20, w 30, w 40, ...)
+		ret	%.L86
+}
