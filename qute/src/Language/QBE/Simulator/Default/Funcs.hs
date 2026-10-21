@@ -10,7 +10,7 @@ import Data.Array (Array, bounds, listArray, (!))
 import Data.Bits ((.&.))
 import Data.ByteString.Lazy qualified as B
 import Data.Word (Word32, Word64)
-import Language.QBE.Simulator.ABI.C (readArray)
+import Language.QBE.Simulator.ABI.C (readArray, writeBuffer)
 import Language.QBE.Simulator.ABI.Errno qualified as ERR
 import Language.QBE.Simulator.ABI.POSIX qualified as POSIX
 import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch))
@@ -25,6 +25,9 @@ mkErrno err =
   E.fromLit (QBE.Base QBE.Long) $
     -(fromIntegral $ ERR.errno err)
 
+fromByteString :: (E.ValueRepr v) => B.ByteString -> [v]
+fromByteString = map (E.fromLit QBE.Byte . fromIntegral) . B.unpack
+
 toByteString :: (E.ValueRepr v) => [v] -> B.ByteString
 toByteString = B.pack . map (fromIntegral . E.toWord64)
 
@@ -32,6 +35,11 @@ readArray' :: (Simulator m v, E.ValueRepr v) => v -> QBE.LoadType -> v -> m [v]
 readArray' startPtr elemTy size = do
   startAddr <- toAddress startPtr
   readArray startAddr elemTy $ E.toWord64 size
+
+writeBuffer' :: (Simulator m v, E.ValueRepr v) => v -> [v] -> m ()
+writeBuffer' startPtr elems = do
+  startAddr <- toAddress startPtr
+  writeBuffer startAddr elems
 
 ------------------------------------------------------------------------
 
@@ -48,12 +56,23 @@ isWritable :: FileEntry -> Bool
 isWritable FileEntry {fdFlags = flags} =
   flags .&. POSIX.oWRONLY /= 0
 
-writeEntry :: (MonadIO m) => (E.ValueRepr v) => FileEntry -> [v] -> m (Maybe Word64)
+isReadable :: FileEntry -> Bool
+isReadable FileEntry {fdFlags = flags} =
+  flags == POSIX.oRDONLY || flags == POSIX.oRDWR
+
+writeEntry :: (MonadIO m, E.ValueRepr v) => FileEntry -> [v] -> m (Maybe Word64)
 writeEntry entry bytes
   | isWritable entry = do
       let bs = toByteString bytes
       liftIO $ B.hPut (fdHandle entry) bs
       pure $ Just (fromIntegral $ B.length bs)
+  | otherwise = pure Nothing
+
+readEntry :: (MonadIO m, E.ValueRepr v) => FileEntry -> Int -> m (Maybe [v])
+readEntry entry num
+  | isReadable entry = do
+      bs <- liftIO $ B.hGet (fdHandle entry) num
+      pure $ Just (fromByteString bs)
   | otherwise = pure Nothing
 
 ------------------------------------------------------------------------
@@ -89,6 +108,20 @@ sysWrite _ [fd, arrayPtr, size] = do
         Just nb -> Just $ E.fromLit (QBE.Base QBE.Word) nb
 sysWrite ident _ = throwError $ FuncArgsMismatch ident
 
+sysRead :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
+sysRead _ [fd, bufPtr, bufSize] = do
+  case getFile (fromIntegral $ E.toWord64 fd) of
+    Nothing -> pure $ Just (mkErrno ERR.EBADF)
+    Just fe -> do
+      retVal <- readEntry fe (fromIntegral $ E.toWord64 bufSize)
+      case retVal of
+        Nothing -> pure $ Just (mkErrno ERR.EIO)
+        Just nb -> do
+          writeBuffer' bufPtr nb
+          let nread = fromIntegral (length nb)
+           in pure $ Just (E.fromLit (QBE.Base QBE.Word) nread)
+sysRead ident _ = throwError $ FuncArgsMismatch ident
+
 sysExit :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
 sysExit _ [status] =
   let code = fromIntegral $ E.toWord64 status
@@ -103,5 +136,6 @@ lookupSimFunc ::
   QBE.GlobalIdent ->
   Maybe ([v] -> m (Maybe v))
 lookupSimFunc i@(QBE.GlobalIdent "qute_exit") = Just (sysExit i)
+lookupSimFunc i@(QBE.GlobalIdent "qute_read") = Just (sysRead i)
 lookupSimFunc i@(QBE.GlobalIdent "qute_write") = Just (sysWrite i)
 lookupSimFunc _ = Nothing
