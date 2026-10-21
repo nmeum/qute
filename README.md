@@ -149,16 +149,17 @@ int main(void) {
 }
 ```
 
-This program can be compiled using the QBE-based [cproc] C11 compiler as follows:
+Since this program uses functions from `stdio.h`, it requires a libc.
+Therefore, it is best compiled using a [modified variant][SCC Qute] of [SCC]:
 
 ```
-$ cproc -emit-qbe example.c
+$ scc -c -o example.qbe example.c -R
 ```
 
-The resulting QBE representation (`example.qbe`) can be symbolically executed using `qute-symex`:
+With a [preloaded libc][SCC Qute], the resulting QBE representation can be symbolically executed using `qute-symex`:
 
 ```
-$ qute-symex --write-tests tests/ example.qbe
+$ qute-symex --preload libc.a example.qbe
 ```
 
 This will yield the following output:
