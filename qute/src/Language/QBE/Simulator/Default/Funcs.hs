@@ -24,6 +24,9 @@ mkErrno err =
   E.fromLit (QBE.Base QBE.Long) $
     -(fromIntegral $ ERR.errno err)
 
+fromByteString :: (E.ValueRepr v) => B.ByteString -> [v]
+fromByteString = map (E.fromLit QBE.Byte . fromIntegral) . B.unpack
+
 toByteString :: (E.ValueRepr v) => [v] -> B.ByteString
 toByteString = B.pack . map (fromIntegral . E.toWord64)
 
@@ -31,6 +34,9 @@ readArray' :: (Simulator m v, E.ValueRepr v) => v -> QBE.LoadType -> v -> m [v]
 readArray' startPtr elemTy size = do
   startAddr <- toAddress startPtr
   readArray startAddr elemTy $ E.toWord64 size
+
+writeArray' :: (Simulator m v, E.ValueRepr v) => v -> QBE.LoadType -> [v] -> m ()
+writeArray' startPtr elemTy size = pure ()
 
 ------------------------------------------------------------------------
 
@@ -47,12 +53,23 @@ isWritable :: FileEntry -> Bool
 isWritable FileEntry {fdFlags = flags} =
   flags .&. POSIX.oWRONLY /= 0
 
-writeEntry :: (MonadIO m) => (E.ValueRepr v) => FileEntry -> [v] -> m (Maybe Word64)
+isReadable :: FileEntry -> Bool
+isReadable FileEntry {fdFlags = flags} =
+  flags .&. POSIX.oRDONLY /= 0
+
+writeEntry :: (MonadIO m, E.ValueRepr v) => FileEntry -> [v] -> m (Maybe Word64)
 writeEntry entry bytes
   | isWritable entry = do
       let bs = toByteString bytes
       liftIO $ B.hPut (fdHandle entry) bs
       pure $ Just (fromIntegral $ B.length bs)
+  | otherwise = pure Nothing
+
+readEntry :: (MonadIO m, E.ValueRepr v) => FileEntry -> Int -> m (Maybe [v])
+readEntry entry num
+  | isReadable entry = do
+      bs <- liftIO $ B.hGet (fdHandle entry) num
+      pure $ Just (fromByteString bs)
   | otherwise = pure Nothing
 
 ------------------------------------------------------------------------
@@ -87,6 +104,19 @@ sysWrite _ [fd, arrayPtr, size] = do
         Nothing -> Just $ mkErrno ERR.EIO
         Just nb -> Just $ E.fromLit (QBE.Base QBE.Word) nb
 sysWrite ident _ = throwError $ FuncArgsMismatch ident
+
+sysRead :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
+sysRead _ [fd, bufPtr, bufSize] = do
+  case getFile (fromIntegral $ E.toWord64 fd) of
+    Nothing -> pure $ Just (mkErrno ERR.EBADF)
+    Just fe -> do
+      retVal <- readEntry fe (fromIntegral $ E.toWord64 bufSize)
+      case retVal of
+        Nothing -> pure $ Just (mkErrno ERR.EIO)
+        Just nb -> do
+          writeArray' bufPtr (QBE.LSubWord QBE.SignedByte) nb
+          pure $ Just (E.fromLit (QBE.Base QBE.Long) $ fromIntegral (length nb))
+sysRead ident _ = throwError $ FuncArgsMismatch ident
 
 sysExit :: (MonadIO m, E.ValueRepr v, Simulator m v) => QBE.GlobalIdent -> [v] -> m (Maybe v)
 sysExit _ [status] =
