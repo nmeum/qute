@@ -159,7 +159,7 @@ $ scc -c -o example.qbe example.c -R
 With a [preloaded libc][SCC Qute], the resulting QBE representation can be symbolically executed using `qute-symex`:
 
 ```
-$ qute-symex --preload libc.a example.qbe
+$ qute-symex --preload libc.a --write-tests example.qbe
 ```
 
 This will yield the following output:
