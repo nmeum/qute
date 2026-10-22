@@ -26,6 +26,7 @@ import Data.List (elemIndex, uncons)
 import Data.Map qualified as Map
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Word (Word8)
+import Language.QBE.Simulator.ABI.C (writeVAList)
 import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Default.State
 import Language.QBE.Simulator.Error
@@ -58,9 +59,9 @@ execVolatile (QBE.Blit src dst toCopy) = do
   -- TODO: Check for invalid BLITs
   srcAddr <- toAddress srcAddrVal
   dstAddr <- toAddress dstAddrVal
-  when (srcAddr /= dstAddr && addrOverlap srcAddr dstAddr toCopy) $
-    throwError $
-      OverlappingBlit srcAddr dstAddr
+  when (srcAddr /= dstAddr && addrOverlap srcAddr dstAddr toCopy)
+    $ throwError
+    $ OverlappingBlit srcAddr dstAddr
 
   -- Somehow allow specialization of memory copies, e.g. for qute-symex.
   when (toCopy > 0) $
@@ -91,19 +92,7 @@ execVolatile (QBE.VAStart val) = do
       -- `stackSpill` places elements from low→high addresses on the stack and
       -- the x86 System V ABI assumes they are instead stored from high→low.
       let overflowPtr = firstAddr + valSize
-
-      -- This is the layout of the `va_list` from the x86 System V ABI. It is
-      -- implemented in a way that it signals that all vaargs are on the stack.
-      --
-      -- See also <https://github.com/klee/klee/blob/v3.3/lib/Core/Executor.cpp#L1962-L1981>.
-      writeMemory ptr (QBE.Base QBE.Word) $
-        E.fromLit (QBE.Base QBE.Word) 48 -- gp_offset
-      writeMemory (ptr + 4) (QBE.Base QBE.Word) $
-        E.fromLit (QBE.Base QBE.Word) 176 -- fp_offset
-      writeMemory (ptr + 8) (QBE.Base QBE.Long) $
-        E.fromLit (QBE.Base QBE.Long) overflowPtr -- overflow_arg_area
-      writeMemory (ptr + 16) (QBE.Base QBE.Long) $
-        E.fromLit (QBE.Base QBE.Long) 0 -- reg_save_area
+      writeVAList ptr overflowPtr
     Nothing -> pure ()
 execVolatile (QBE.DBGLoc {}) = pure ()
 {-# INLINEABLE execVolatile #-}

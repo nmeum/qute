@@ -8,6 +8,7 @@ module Language.QBE.Simulator.ABI.C
     readString,
     readArray,
     writeBuffer,
+    writeVAList,
   )
 where
 
@@ -51,3 +52,21 @@ writeBuffer = foldM_ go
       writeMemory lastAddr elTy el
       pure $ lastAddr + elSize
 {-# INLINE writeBuffer #-}
+
+-- | This writes the @overflow_arg_area@ of a @va_list@ in memory, as defined
+-- in the x86-64-ABI psABI.
+writeVAList :: (Simulator m v) => MEM.Address -> MEM.Address -> m ()
+writeVAList ptr overflowPtr = do
+  -- This is the layout of the `va_list` from the x86 System V ABI. It is
+  -- implemented in a way that it signals that all vaargs are on the stack.
+  --
+  -- See also <https://github.com/klee/klee/blob/v3.3/lib/Core/Executor.cpp#L1962-L1981>.
+  writeMemory ptr (QBE.Base QBE.Word) $
+    E.fromLit (QBE.Base QBE.Word) 48 -- gp_offset
+  writeMemory (ptr + 4) (QBE.Base QBE.Word) $
+    E.fromLit (QBE.Base QBE.Word) 176 -- fp_offset
+  writeMemory (ptr + 8) (QBE.Base QBE.Long) $
+    E.fromLit (QBE.Base QBE.Long) overflowPtr -- overflow_arg_area
+  writeMemory (ptr + 16) (QBE.Base QBE.Long) $
+    E.fromLit (QBE.Base QBE.Long) 0 -- reg_save_area
+{-# INLINE writeVAList #-}
