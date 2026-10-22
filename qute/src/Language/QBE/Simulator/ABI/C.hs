@@ -4,7 +4,8 @@
 
 -- | This module provides utility functions for interfacing with C code.
 module Language.QBE.Simulator.ABI.C
-  ( readString,
+  ( charRepr,
+    readString,
     readArray,
     writeBuffer,
   )
@@ -17,13 +18,17 @@ import Language.QBE.Simulator.Memory qualified as MEM
 import Language.QBE.Simulator.State (Simulator, readMemory, writeMemory)
 import Language.QBE.Types qualified as QBE
 
+-- | Representation of a @char@ in C.
+charRepr :: QBE.LoadType
+charRepr = QBE.LSubWord QBE.SignedByte
+
 -- | Read a null-terminated C string from memory at the given 'MEM.Address'.
 -- The return value is a list of 8-bit values.
 readString :: (Simulator m v) => MEM.Address -> m [v]
 readString addr = go addr []
   where
     go a acc = do
-      byte <- readMemory (QBE.LSubWord QBE.SignedByte) a
+      byte <- readMemory charRepr a
       if E.toWord64 byte == 0
         then pure acc
         else go (a + 1) (acc ++ [byte])

@@ -10,7 +10,7 @@ import Data.Array (Array, bounds, listArray, (!))
 import Data.Bits ((.&.))
 import Data.ByteString.Lazy qualified as B
 import Data.Word (Word32, Word64)
-import Language.QBE.Simulator.ABI.C (readArray, writeBuffer)
+import Language.QBE.Simulator.ABI.C (charRepr, readArray, writeBuffer)
 import Language.QBE.Simulator.ABI.Errno qualified as ERR
 import Language.QBE.Simulator.ABI.POSIX qualified as POSIX
 import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch))
@@ -101,7 +101,7 @@ sysWrite _ [fd, arrayPtr, size] = do
   case getFile (fromIntegral $ E.toWord64 fd) of
     Nothing -> pure $ Just (mkErrno ERR.EBADF)
     Just fe -> do
-      bArray <- readArray' arrayPtr (QBE.LSubWord QBE.SignedByte) size
+      bArray <- readArray' arrayPtr charRepr size
       retVal <- writeEntry fe bArray
       pure $ case retVal of
         Nothing -> Just $ mkErrno ERR.EIO
