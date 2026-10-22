@@ -3,12 +3,18 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
 -- | This module provides utility functions for interfacing with C code.
-module Language.QBE.Simulator.ABI.C (readString, readArray) where
+module Language.QBE.Simulator.ABI.C
+  ( readString,
+    readArray,
+    writeBuffer,
+  )
+where
 
+import Control.Monad (foldM_)
 import Data.Word (Word64)
 import Language.QBE.Simulator.Expression qualified as E
 import Language.QBE.Simulator.Memory qualified as MEM
-import Language.QBE.Simulator.State (Simulator, readMemory)
+import Language.QBE.Simulator.State (Simulator, readMemory, writeMemory)
 import Language.QBE.Types qualified as QBE
 
 -- | Read a null-terminated C string from memory at the given 'MEM.Address'.
@@ -29,3 +35,14 @@ readArray :: (Simulator m v) => MEM.Address -> QBE.LoadType -> Word64 -> m [v]
 readArray addr elemTy numElems =
   mapM (\off -> readMemory elemTy (addr + off)) [0 .. numElems - 1]
 {-# INLINE readArray #-}
+
+-- | Write a list of values to a memory buffer located at the given 'MEM.Address'.
+writeBuffer :: (Simulator m v) => MEM.Address -> [v] -> m ()
+writeBuffer = foldM_ go
+  where
+    go lastAddr el = do
+      let elTy = E.getType el
+          elSize = fromIntegral $ QBE.extTypeByteSize elTy
+      writeMemory lastAddr elTy el
+      pure $ lastAddr + elSize
+{-# INLINE writeBuffer #-}
