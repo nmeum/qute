@@ -156,7 +156,8 @@ Therefore, it is best compiled using a [modified variant][SCC Qute] of [SCC]:
 $ scc -c -o example.qbe example.c -R
 ```
 
-With a [preloaded libc][SCC Qute], the resulting QBE representation can be symbolically executed using `qute-symex`:
+With a [preloaded libc][SCC Qute], the resulting QBE representation can be symbolically executed using `qute-symex`.
+Note that within a `guix shell` with [`simple-cc`][guix simple-cc], the `libc.a` is available via `$GUIX_ENVIRONMENT/lib/scc/amd64-qute/libc.a`.
 
 ```
 $ qute-symex --preload libc.a --write-tests example.qbe
