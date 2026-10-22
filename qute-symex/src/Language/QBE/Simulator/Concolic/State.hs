@@ -31,6 +31,7 @@ import Data.Word (Word8)
 import Language.QBE (Program)
 import Language.QBE.Backend.Store qualified as ST
 import Language.QBE.Backend.Tracer qualified as T
+import Language.QBE.Simulator.ABI.C (readNullArray)
 import Language.QBE.Simulator.Concolic.Expression qualified as CE
 import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Default.Funcs (lookupSimFunc)

@@ -78,6 +78,7 @@ library
       Language.QBE.Analysis.Graph,
       Language.QBE.Linker,
       Language.QBE.Simulator,
+      Language.QBE.Simulator.ABI.C,
       Language.QBE.Simulator.ABI.Errno,
       Language.QBE.Simulator.ABI.POSIX,
       Language.QBE.Simulator.State,

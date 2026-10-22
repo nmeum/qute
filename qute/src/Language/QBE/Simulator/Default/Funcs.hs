@@ -10,11 +10,12 @@ import Data.Array (Array, bounds, listArray, (!))
 import Data.Bits ((.&.))
 import Data.ByteString.Lazy qualified as B
 import Data.Word (Word32, Word64)
+import Language.QBE.Simulator.ABI.C (readArray)
 import Language.QBE.Simulator.ABI.Errno qualified as ERR
 import Language.QBE.Simulator.ABI.POSIX qualified as POSIX
 import Language.QBE.Simulator.Error (EvalError (FuncArgsMismatch))
 import Language.QBE.Simulator.Expression qualified as E
-import Language.QBE.Simulator.State (Simulator, readArray, toAddress)
+import Language.QBE.Simulator.State (Simulator, toAddress)
 import Language.QBE.Types qualified as QBE
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import System.IO (Handle, stderr, stdin, stdout)

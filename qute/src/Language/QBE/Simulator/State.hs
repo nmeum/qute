@@ -23,8 +23,6 @@ module Language.QBE.Simulator.State
     subType,
     runBinary,
     returnFromFunc,
-    readArray,
-    readNullArray,
 
     -- * Stack
     StackFrame (..),
@@ -287,22 +285,3 @@ lookupArg QBE.ArgVar = pure Nothing
 lookupArgs :: (Simulator m v) => [QBE.FuncArg] -> m [v]
 lookupArgs args = catMaybes <$> mapM lookupArg args
 {-# INLINE lookupArgs #-}
-
--- | Read a null-terminated C string from memory at the given 'MEM.Address'.
--- The return value is a list of 8-bit values.
-readNullArray :: (Simulator m v) => MEM.Address -> m [v]
-readNullArray addr = go addr []
-  where
-    go a acc = do
-      byte <- readMemory (QBE.LSubWord QBE.SignedByte) a
-      if E.toWord64 byte == 0
-        then pure acc
-        else go (a + 1) (acc ++ [byte])
-{-# INLINE readNullArray #-}
-
--- | Read an array of a fixed size, starting from a given 'MEM.Address'.
--- The array is assumed to only store elements of the given 'QBE.LoadType'.
-readArray :: (Simulator m v) => MEM.Address -> QBE.LoadType -> Word64 -> m [v]
-readArray addr elemTy numElems =
-  mapM (\off -> readMemory elemTy (addr + off)) [0 .. numElems - 1]
-{-# INLINE readArray #-}
