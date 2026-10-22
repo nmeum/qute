@@ -1243,6 +1243,15 @@ blockTests =
               "va-copy.qbe"
 
           res @?= Just (D.VWord 100),
+      testCase "va_copy with no vaargs" $
+        do
+          res <-
+            parseAndExecFile
+              (QBE.GlobalIdent "main")
+              []
+              "va-copy-empty.qbe"
+
+          res @?= Just (D.VWord 0),
       testCase "invoke function via function pointer" $
         do
           res <-

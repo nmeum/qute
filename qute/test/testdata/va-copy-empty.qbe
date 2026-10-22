@@ -1,0 +1,27 @@
+export function w $myprintf(w %n.L6.val,l %fmt.L7.val, ...)
+{
+@myprintf.body
+@.L8
+	%n.L6 =l	alloc4	4
+	%fmt.L7 =l	alloc8	8
+	%args.L10 =l	alloc8	24
+	%copy.L12 =l	alloc8	24
+		storew	%n.L6.val,%n.L6
+		storel	%fmt.L7.val,%fmt.L7
+		vastart %args.L10
+		blit	%args.L10,%copy.L12,24
+		ret	0
+}
+data $.L11 = align 1 {
+	b	"hello, world!",
+	b	0,
+}
+export function w $main()
+{
+@main.body
+@.L15
+	%.L12 =w	call	$myprintf(w 0, l $.L11, ...)
+		ret	%.L12
+@.L16
+		ret	0
+}

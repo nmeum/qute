@@ -93,7 +93,7 @@ execVolatile (QBE.VAStart val) = do
       -- the x86 System V ABI assumes they are instead stored from high→low.
       let overflowPtr = firstAddr + valSize
       writeVAList ptr overflowPtr
-    Nothing -> pure ()
+    Nothing -> writeVAList ptr 0
 execVolatile (QBE.DBGLoc {}) = pure ()
 {-# INLINEABLE execVolatile #-}
 
