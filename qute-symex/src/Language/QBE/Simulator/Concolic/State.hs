@@ -31,7 +31,7 @@ import Data.Word (Word8)
 import Language.QBE (Program)
 import Language.QBE.Backend.Store qualified as ST
 import Language.QBE.Backend.Tracer qualified as T
-import Language.QBE.Simulator.ABI.C (readNullArray)
+import Language.QBE.Simulator.ABI.C (readString)
 import Language.QBE.Simulator.Concolic.Expression qualified as CE
 import Language.QBE.Simulator.Default.Expression qualified as DE
 import Language.QBE.Simulator.Default.Funcs (lookupSimFunc)
@@ -98,7 +98,7 @@ makeSymbolicArray ::
   [CE.Concolic DE.RegVal] ->
   SimState (Maybe (CE.Concolic DE.RegVal))
 makeSymbolicArray _ [arrayPtr, numElem, elemSize, namePtr] = do
-  name <- E.toString <$> (toAddress namePtr >>= readNullArray)
+  name <- E.toString <$> (toAddress namePtr >>= readString)
   vlty <- case E.toWord64 elemSize of
     1 -> pure QBE.Byte
     2 -> pure QBE.HalfWord
