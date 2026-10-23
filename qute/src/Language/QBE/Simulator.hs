@@ -59,9 +59,8 @@ execVolatile (QBE.Blit src dst toCopy) = do
   -- TODO: Check for invalid BLITs
   srcAddr <- toAddress srcAddrVal
   dstAddr <- toAddress dstAddrVal
-  when (srcAddr /= dstAddr && addrOverlap srcAddr dstAddr toCopy)
-    $ throwError
-    $ OverlappingBlit srcAddr dstAddr
+  when (srcAddr /= dstAddr && addrOverlap srcAddr dstAddr toCopy) $
+    throwError (OverlappingBlit srcAddr dstAddr)
 
   -- Somehow allow specialization of memory copies, e.g. for qute-symex.
   when (toCopy > 0) $
