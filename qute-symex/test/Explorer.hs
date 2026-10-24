@@ -259,7 +259,7 @@ exploreTests =
           length woErr @?= 1
 
           let errorVars = pathVars $ fst $ fromJust $ uncons wErr
-              errorVal = Map.lookup "a1" errorVars
+              errorVal = Map.lookup "a_b1" errorVars
           errorVal @?= Just (DE.VWord 42),
       testCase "explore program with multiple paths to error" $
         do
@@ -292,7 +292,7 @@ exploreTests =
           length woErr @?= 20
 
           let errorVars = pathVars $ fst $ fromJust $ uncons wErr
-              errorVal = Map.lookup "prime1" errorVars
+              errorVal = Map.lookup "prime_b1" errorVars
           errorVal @?= Just (DE.VWord 43),
       testCase "exploration with memory error" $
         do
@@ -308,7 +308,7 @@ exploreTests =
           length woErr @?= 3
 
           let errorVars = pathVars $ fst $ fromJust $ uncons wErr
-              errorVal = Map.lookup "a1" errorVars
+              errorVal = Map.lookup "a_b1" errorVars
           errorVal @?= Just (DE.VWord 0x23523929),
       testCase "code calling exit(3)" $
         do
