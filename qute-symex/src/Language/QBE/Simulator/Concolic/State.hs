@@ -108,7 +108,7 @@ makeSymbolicArray _ [arrayPtr, numElem, elemSize, namePtr] = do
 
   values <-
     mapM
-      (\n -> makeConcolic (name ++ show n) vlty)
+      (\n -> makeConcolic (name ++ "_b" ++ show n) vlty)
       [1 .. E.toWord64 numElem]
 
   arrayAddr <- toAddress arrayPtr
