@@ -14,6 +14,7 @@ module SimpleBV
     SMT.solverLogger,
     SMT.smtSolverLogger,
     SMT.setLogic,
+    SMT.setOption,
     SMT.push,
     SMT.pop,
     SMT.popMany,

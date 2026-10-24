@@ -51,13 +51,18 @@ findSolver =
       r <- findExecutable exec
       maybe empty (\_ -> pure (exec, args)) r
 
+setupSolver :: SMT.Solver -> IO ()
+setupSolver s = do
+  -- Do not tie declarations to the current assertion stack.
+  SMT.setOption s ":global-declarations" "true"
+  SMT.setLogic s logic
+
 defSolver :: IO SMT.Solver
 defSolver = do
   -- l <- SMT.newLogger 0
   (solver, args) <- findSolver
   s <- SMT.newSolver solver args Nothing
-  SMT.setLogic s logic
-  return s
+  setupSolver s >> return s
 
 logSolver :: Handle -> IO SMT.Solver
 logSolver handle = do
@@ -68,8 +73,7 @@ logSolver handle = do
       (SMT.defaultConfig solver args)
         { SMT.solverLogger = SMT.smtSolverLogger l
         }
-  SMT.setLogic s logic
-  return s
+  setupSolver s >> return s
 
 ------------------------------------------------------------------------
 
