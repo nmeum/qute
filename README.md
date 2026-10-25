@@ -274,7 +274,7 @@ This project uses the [REUSE Specification] to indicated used software license.
 [Hackage qute]: https://hackage.haskell.org/package/qute
 [dynamic software analysis]: https://en.wikipedia.org/wiki/Dynamic_program_analysis
 [static software analysis]: https://en.wikipedia.org/wiki/Static_program_analysis
-[ASYDE]: https://www.ibr.cs.tu-bs.de/vss/Publications/2026/tempel_26_qute.pdf
+[ASYDE]: https://doi.org/10.1145/3843777.3844530
 [`Simulator`]: https://hackage-content.haskell.org/package/qute/docs/Language-QBE-Simulator-State.html#t:Simulator
 [`Language.QBE.Simulator.Default.State`]: https://hackage-content.haskell.org/package/qute/docs/Language-QBE-Simulator-Default-State.html
 [`Language.QBE.Simulator.Concolic.State`]: https://hackage-content.haskell.org/package/qute-symex/docs/Language-QBE-Simulator-Concolic-State.html
