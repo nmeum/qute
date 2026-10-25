@@ -150,17 +150,25 @@ int main(void) {
 ```
 
 Since this program uses functions from `stdio.h`, it requires a libc.
-Therefore, it is best compiled using a [modified variant][SCC Qute] of [SCC]:
+Therefore, it requires some additional software and is thus best run in the provided [Guix] environment.
+To obtain this environment with the required software, run the following command:
 
 ```
-$ scc -c -o example.qbe example.c -R
+$ guix time-machine -C .guix/channels.scm -- shell -L .guix/modules/ qute-cli bitwuzla simple-cc ktest-tool
+[env]$ 
 ```
 
-With a [preloaded libc][SCC Qute], the resulting QBE representation can be symbolically executed using `qute-symex`.
-Note that within a `guix shell` with [`simple-cc`][guix simple-cc], the `libc.a` is available via `$GUIX_ENVIRONMENT/lib/scc/amd64-qute/libc.a`.
+Within this environment, we can compile the example code using a [modified variant][SCC Qute] of [SCC] which includes a Qute-compatible libc:
 
 ```
-$ qute-symex --preload libc.a --write-tests example.qbe
+[env]$ scc -c -o example.qbe example.c -R
+```
+
+Afterward, we can preload the Qute-compatible libc to symbolically execute the QBE representation of the example using `qute-symex`.
+Within the Guix environment, the Qute libc is available via `$GUIX_ENVIRONMENT/lib/scc/amd64-qute/libc.a`, thus we run it as follows:
+
+```
+[env]$ qute-symex --preload "$GUIX_ENVIRONMENT/lib/scc/amd64-qute/libc.a" --test-cases=tests/ --write-all example.qbe
 ```
 
 This will yield the following output:
@@ -174,16 +182,16 @@ Amount of paths: 2
 ```
 
 This indicates that we found two execution paths through our program based on the symbolic variable `a`.
-Due to the `--write-tests` option, `qute-symex` will create a `tests/` directory that contains test inputs in the [ktest format][KLEE ktest], one for each execution path.
+Due to the `--test-cases` option, `qute-symex` will create a `tests/` directory that contains test inputs in the [ktest format][KLEE ktest], one for each execution path (`--write-all`).
 These files can be inspected with the `ktest-tool` from [KLEE] (which is included in the Guix development environment described below).
 For example:
 
 ```
-$ ktest-tool tests/test000002.ktest
+[env]$ ktest-tool tests/test000002.ktest
 ktest file : 'tests/test000002.ktest'
 args       : ['example.qbe']
 num objects: 1
-object 0: name: 'a1'
+object 0: name: 'a_e1'
 object 0: size: 4
 object 0: data: b'*\x00\x00\x00'
 object 0: hex : 0x2a000000
