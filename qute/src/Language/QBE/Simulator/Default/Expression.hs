@@ -66,7 +66,7 @@ bitSize (VDouble _) = 64
 -- amount of bits instead of requiring the user to provide a 'QBE.ExtType',
 -- as required by 'Language.QBE.Simulator.Expression.fromLit'.
 fromBits :: Int -> Integer -> Maybe RegVal
-fromBits 08 = Just . VHalf . fromIntegral
+fromBits 08 = Just . VByte . fromIntegral
 fromBits 16 = Just . VHalf . fromIntegral
 fromBits 32 = Just . VWord . fromIntegral
 fromBits 64 = Just . VLong . fromIntegral
