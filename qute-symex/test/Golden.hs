@@ -22,7 +22,7 @@ exploreQBE :: FilePath -> [(String, QBE.BaseType)] -> IO Result
 exploreQBE filePath params = do
   (prog, func) <- readFile filePath >>= parseAndFind entryFunc
 
-  defEnv <- mkEnv prog 0 128 Nothing
+  defEnv <- mkEnv prog 0 128 False Nothing
   engine <- newEngine defEnv <$> defSolver
 
   traces <-

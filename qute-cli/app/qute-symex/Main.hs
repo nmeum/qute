@@ -183,7 +183,7 @@ exploreFile opts@Opts {optBase = base} = do
         Just <$> mkKTestConf logLevel dir binName
       Nothing -> pure Nothing
 
-  env <- mkEnv prog (CMD.optMemStart base) (CMD.optMemSize base) (optSeed opts)
+  env <- mkEnv prog (CMD.optMemStart base) (CMD.optMemSize base) (not (CMD.optMemUndef base)) (optSeed opts)
   case optLog opts of
     Just fn -> withFile fn WriteMode (exploreWithHandle ktest env func)
     Nothing -> do

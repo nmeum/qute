@@ -34,7 +34,7 @@ findAssign ((PathResult _ eTrace a) : xs) toFind
 
 explore' :: Program -> QBE.FuncDef -> [(String, QBE.BaseType)] -> IO [PathResult]
 explore' prog entry params = do
-  defEnv <- mkEnv prog 0 128 Nothing
+  defEnv <- mkEnv prog 0 128 False Nothing
   engine <- newEngine defEnv <$> defSolver
 
   exploreFunc engine entry $ map (second QBE.Base) params

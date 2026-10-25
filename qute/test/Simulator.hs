@@ -18,6 +18,14 @@ import System.FilePath ((</>))
 import Test.Tasty
 import Test.Tasty.HUnit
 
+parseAndExec'' ::
+  Env D.RegVal Word8 ->
+  QBE.FuncDef ->
+  [D.RegVal] ->
+  IO (Either EvalError (Maybe D.RegVal))
+parseAndExec'' env func params = do
+  try $ run env (execFunc func params)
+
 parseAndExec' ::
   QBE.GlobalIdent ->
   [D.RegVal] ->
@@ -25,9 +33,8 @@ parseAndExec' ::
   IO (Either EvalError (Maybe D.RegVal))
 parseAndExec' funcName params input = do
   (prog, entry) <- parseAndFind funcName input
-
-  env <- mkEnv prog 0 128 :: IO (Env D.RegVal Word8)
-  try $ run env (execFunc entry params)
+  env <- mkEnv prog 0 128 False :: IO (Env D.RegVal Word8)
+  parseAndExec'' env entry params
 
 parseAndExec :: QBE.GlobalIdent -> [D.RegVal] -> String -> IO (Maybe D.RegVal)
 parseAndExec funcName params input = do
@@ -36,10 +43,14 @@ parseAndExec funcName params input = do
     Left e -> fail $ "Unexpected evaluation error: " ++ show e
     Right r -> pure r
 
+readTestFile :: FilePath -> IO String
+readTestFile fileName = do
+  let filePath = "test" </> "testdata" </> fileName
+  readFile filePath
+
 parseAndExecFile :: QBE.GlobalIdent -> [D.RegVal] -> FilePath -> IO (Maybe D.RegVal)
 parseAndExecFile funcName params fileName = do
-  let filePath = "test" </> "testdata" </> fileName
-  input <- readFile filePath
+  input <- readTestFile fileName
   parseAndExec funcName params input
 
 ------------------------------------------------------------------------
@@ -1294,7 +1305,17 @@ blockTests =
               \}\n\
               \export data $x = align 4 { z 4 }\n"
 
-          res @?= Just (D.VWord 23)
+          res @?= Just (D.VWord 23),
+      testCase "copy struct with padding bytes" $
+        do
+          qbeInput <- readTestFile "blit-padded-struct.qbe"
+          (prog, entry) <- parseAndFind (QBE.GlobalIdent "main") qbeInput
+
+          -- For this test to pass, we need to zero-initialize the memory.
+          env <- mkEnv prog 0 128 True :: IO (Env D.RegVal Word8)
+          res <- parseAndExec'' env entry []
+
+          res @?= Right (Just (D.VWord 23))
     ]
 
 simTests :: TestTree

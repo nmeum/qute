@@ -24,6 +24,8 @@ data BasicArgs = BasicArgs
     optMemStart :: MEM.Address,
     -- | Size of the memory in bytes.
     optMemSize :: MEM.Size,
+    -- | Do not zero-initialize the memory.
+    optMemUndef :: Bool,
     -- | Path to an .ar archive to preload.
     optQBEArchive :: Maybe FilePath,
     -- | Path to the QBE input file.
@@ -46,6 +48,10 @@ basicArgs =
           <> OPT.short 's'
           <> OPT.value (1024 * 1024) -- 1 MB RAM
           <> OPT.help "Size of the memory region"
+      )
+    <*> OPT.switch
+      ( OPT.long "memory-uninitialized"
+          <> OPT.help "Do not zero-initialize the memory"
       )
     <*> OPT.optional
       ( OPT.strOption

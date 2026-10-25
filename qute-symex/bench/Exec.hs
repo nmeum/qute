@@ -19,7 +19,7 @@ exec :: [CE.Concolic DE.RegVal] -> String -> IO ()
 exec params input = do
   (prog, func) <- parseAndFind entryFunc input
 
-  env <- mkEnv prog 0 1024
+  env <- mkEnv prog 0 1024 False
   void $ run env (execFunc func params :: SimState (CE.Concolic DE.RegVal) (CE.Concolic Word8) (Maybe (CE.Concolic DE.RegVal)))
   where
     entryFunc :: QBE.GlobalIdent

@@ -31,6 +31,7 @@ where
 import Data.Array.IO
   ( MArray,
     getBounds,
+    newArray,
     newArray_,
     readArray,
     writeArray,
@@ -74,9 +75,14 @@ data Memory a v = Memory
 -- has a maximum capacity (i.e., can store up to the given amount of bytes).
 -- The memory is not initialized, reading an uninitialized values results
 -- in an error.
-mkMemory :: (MArray t a IO) => Address -> Size -> IO (Memory t a)
-mkMemory startAddr size = do
-  ary <- newArray_ (0, size - 1)
+mkMemory :: (MArray t a IO) => Address -> Maybe a -> Size -> IO (Memory t a)
+mkMemory startAddr zeroValueMay size = do
+  let bounds = (0, size - 1)
+  ary <-
+    case zeroValueMay of
+      Just zeroValue -> newArray bounds zeroValue
+      _ -> newArray_ bounds
+
   return $ Memory startAddr ary
 
 -- | Translate global address to a memory-local address. That is, performs

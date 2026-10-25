@@ -55,10 +55,11 @@ mkEnv ::
   Program ->
   MEM.Address ->
   MEM.Size ->
+  Bool ->
   Maybe Int ->
   IO Env
-mkEnv prog memStart memSize maySeed = do
-  initEnv <- DS.mkEnv prog memStart memSize
+mkEnv prog memStart memSize initMem maySeed = do
+  initEnv <- DS.mkEnv prog memStart memSize initMem
   randGen <-
     case maySeed of
       Just sd -> pure $ mkStdGen sd

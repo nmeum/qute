@@ -17,7 +17,7 @@ exec :: [D.RegVal] -> String -> IO ()
 exec params input = do
   (prog, func) <- parseAndFind entryFunc input
 
-  env <- mkEnv prog 0 memSize :: IO (Env D.RegVal Word8)
+  env <- mkEnv prog 0 memSize False :: IO (Env D.RegVal Word8)
   void $ run env (execFunc func params)
   where
     memSize :: Word64

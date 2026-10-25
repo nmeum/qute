@@ -23,7 +23,7 @@ execFile :: CMD.BasicArgs -> IO Int
 execFile opts = do
   (prog, func) <- CMD.loadProg opts
 
-  env <- mkEnv prog (CMD.optMemStart opts) (CMD.optMemSize opts)
+  env <- mkEnv prog (CMD.optMemStart opts) (CMD.optMemSize opts) (not (CMD.optMemUndef opts))
   res <- run (env :: Env DE.RegVal Word8) (execFunc func [])
   case res >>= fromWord of
     Just x -> pure $ fromIntegral x

@@ -20,7 +20,7 @@ stateTests =
         do
           let obj = QBE.OItem QBE.Byte [QBE.DString "foobar"]
 
-          env <- mkEnv [] 0x1000 128 :: IO (Env D.RegVal Word8)
+          env <- mkEnv [] 0x1000 128 False :: IO (Env D.RegVal Word8)
           res <- evalStateT (loadObj 0x1000 obj) env
 
           res @?= 0x1006,
@@ -30,7 +30,7 @@ stateTests =
           let o1 = QBE.OItem QBE.Byte [QBE.DString "foobar"]
           let o2 = QBE.OItem (QBE.Base QBE.Word) [QBE.DConst $ QBE.Number 23]
 
-          env <- mkEnv [] 0x0 128 :: IO (Env D.RegVal Word8)
+          env <- mkEnv [] 0x0 128 False :: IO (Env D.RegVal Word8)
           res <- evalStateT (loadObj 0x0 o1 >>= flip loadObj o2) env
 
           -- No padding inserted.

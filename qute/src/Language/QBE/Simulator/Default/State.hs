@@ -42,6 +42,7 @@ import Control.Monad.State.Strict
     runStateT,
   )
 import Data.Array.IO (IOArray)
+import Data.List (uncons)
 import Data.Map qualified as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Tuple (swap)
@@ -76,12 +77,14 @@ allocText addr (func : rest) =
     pointerSize = fromIntegral $ QBE.baseTypeByteSize QBE.Long
 
 mkEnv ::
+  forall v b.
   (MEM.Storable v b, E.ValueRepr v) =>
   Program ->
   MEM.Address ->
   MEM.Size ->
+  Bool ->
   IO (Env v b)
-mkEnv prog a s = do
+mkEnv prog a s initMemory = do
   -- Memory Layout: Data memory starts at address zero and grows upward. The
   -- stack starts at the maximum address and grows downward towards address
   -- zero.
@@ -91,7 +94,14 @@ mkEnv prog a s = do
   -- reading/writing that memory errors.
   --
   -- TODO: Check for stack overflow.
-  mem <- MEM.mkMemory a s
+
+  let zeroByte =
+        case uncons $ MEM.toBytes (E.fromLit @v QBE.Byte 0) of
+          Just (firstByte, _) -> firstByte
+          _ -> error "unrechable"
+      zeroByteMay = if initMemory then Just zeroByte else Nothing
+  mem <- MEM.mkMemory a zeroByteMay s
+
   let dataMem = allocData a (mapMaybe isData prog)
       fns = globalFuncs prog
       txt = allocText (fromIntegral $ a + s) fns

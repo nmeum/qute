@@ -1,0 +1,35 @@
+type :.6 = align 4 { 8 }
+type :.10 = align 8 { 16 }
+type :.14 = align 8 { 16 }
+type :.95 = align 8 { 32 }
+export function :.95 $somefunc(w %status.L103.val)
+{
+@somefunc.body
+@.L64
+	%status.L103 =l	alloc4	4
+	%.L54 =l	alloc8	32
+		storew	%status.L103.val,%status.L103
+	%.L55 =l	add	%.L54,0
+	%.L56 =w	loadsw	%status.L103
+		storew	%.L56,%.L55
+	%.L58 =l	add	%.L54,8
+		storel	0,%.L58
+	%.L60 =l	add	%.L54,16
+		storel	0,%.L60
+	%.L62 =l	add	%.L54,24
+		storew	0,%.L62
+		ret	%.L54
+}
+export function w $main()
+{
+@main.body
+@.L72
+	%s.L107 =l	alloc8	32
+	%.L67 =:.95	call	$somefunc(w 23)
+		blit	%.L67,%s.L107,32
+	%.L70 =l	add	%s.L107,0
+	%.L71 =w	loadsw	%.L70
+		ret	%.L71
+@.L73
+		ret	0
+}

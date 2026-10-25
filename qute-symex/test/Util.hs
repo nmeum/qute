@@ -22,7 +22,7 @@ parseAndExec :: QBE.GlobalIdent -> [CE.Concolic DE.RegVal] -> String -> IO T.Exe
 parseAndExec funcName params input = do
   (prog, entry) <- parseAndFind funcName input
 
-  env <- mkEnv prog 0 128 Nothing
+  env <- mkEnv prog 0 128 False Nothing
   fst <$> run env (execFunc entry params)
 
 unconstrained :: SMT.Solver -> Word64 -> String -> QBE.BaseType -> IO (CE.Concolic DE.RegVal)
@@ -38,7 +38,7 @@ explore' :: String -> String -> [(String, QBE.BaseType)] -> IO [PathResult]
 explore' input funcName params = do
   (prog, entry) <- parseAndFind (QBE.GlobalIdent funcName) input
 
-  defEnv <- mkEnv prog 0 128 Nothing
+  defEnv <- mkEnv prog 0 128 False Nothing
   engine <- newEngine defEnv <$> defSolver
   exploreFunc engine entry $
     map (second QBE.Base) params
